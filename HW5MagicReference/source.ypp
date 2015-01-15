@@ -1,0 +1,764 @@
+%{
+	#include <stdlib.h>
+	#include <stack>
+	#include <iostream>
+	#include <sstream>
+	#include <string>
+	#include <map>
+	#include "attributes.h"
+	#include "bp.hpp"
+	using namespace std;
+	extern int yylex();
+	extern int yylineno;
+	int yyerror(const char * message);	
+	int counter; //counter t
+	int wCount;
+	typedef struct
+	{
+		string name;
+		string type;
+		int offset;
+	} var;
+	
+	stack<int> scopes;
+	map<int,var> var_map;
+	
+	//converts
+	void fromMtoC (string rName);
+	void fromMtoF (string rName);
+	void fromCtoM (string rName);
+	void fromFtoM (string rName);
+	void fromFtoC (string rName);
+	void fromCtoF (string rName);
+	
+	void getAnsForRelOp(string name, string param1, string param2, string op);
+	void closeCurrentScope(string str);
+	void checkPlusAllowed(string type1, string type2);
+	void checkMinusAllowed(string type1, string type2);
+	bool isLengthType(string type);
+	void checkSwitchAllowed(bool type);
+	void isBool(string type);
+	void checkDivAllowed(string type1, string type2);
+	void checkMultAllowed(string type1, string type2);
+	void checkRelOpAllowed(string type1, string type2);
+	void checkInputAllowed(string type);
+	void checkPrintAllowed(string type);
+	void checkBreakAllowed();
+	int getOffsetByName(string varname);
+	string getTypeByName(string varname);
+	void varNameExists(string name);
+	string getVarType(string varname);
+	string resultTypeDiv(string type1, string type2);
+	void typesAssignable(string type1, string type2);
+	void openNewScope();
+	string resultTypeMult(string type1, string type2);
+	void addVarToScope(string name, string type);
+	list<int> makeNewList();
+	int getValByTypeInSwitch(string exp, string value, string type);
+	void getValForRelOp(string param1, string param2);
+	//emits
+	void emitOfAssignment(string id, string exp);
+	void emitOfNumExp(string exp, string name);
+	void emitOfNotExp(string exp, string name);
+	void emitOfIdExp(string exp, string name);
+	void emitOfBoolExp(string name, string val);
+	void emitOfOpExp(string name, string param1, string param2, string op);
+	void emitOfAndExp(string exp, string param1, string param2);
+	void emitOfORExp(string exp, string param1, string param2);
+	void emitOfPrintFunc(string exp, string name);
+	void emitOfInputFunc(string exp, string name);
+	void emitOfRelOpExp(string param1, string param2, string op);
+
+%}
+
+%token LP RP LC RC 
+%token SC COL
+%token METER FOOT CUBIT
+%token PRINT INPUT ID 
+%token INT STRING BOOL NUM
+%token TRUE FALSE 
+%token IF WHILE BREAK SWITCH CASE
+%right ASSIGN
+%left OR
+%left AND
+%left REL_OP
+%left PLUS MINUS
+%left MULT DIV
+%nonassoc DEGEL
+%nonassoc ELSE
+%right NOT
+
+%%
+
+Prog	:	{openNewScope();} Statements {closeCurrentScope("SINGLE_DEC"); bp($2.nextList, next());};
+	
+Statements	:	Statements M Statement {	bp($1.nextList, $2.nextList.front() ); 
+											$$.nextList = $3.nextList; 
+											$$.breaksList = merge($1.breaksList, $3.breaksList);} 
+			|	Statement {$$.nextList = $1.nextList; $$.breaksList = $1.breaksList;};
+
+Statement	:	LC {openNewScope();} Statements {closeCurrentScope("SINGLE_DEC");} RC { $$.type = "NON_SINGLE_DEC"; $$.nextList = $3.nextList; $$.breaksList = $3.breaksList;}
+			|	Type ID SC {addVarToScope($2.name, $1.type); $$.type = "SINGLE_DEC"; $$.nextList = makeNewList(); $$.breaksList = makeNewList();}
+			| 	Type ID {addVarToScope($2.name, $1.type);} ASSIGN Exp SC {	typesAssignable($1.type, $5.type); 
+																		$$.type = "SINGLE_DEC"; 
+																		if($5.type == "BOOL") {
+																			bp($5.trueList, next());
+																			bp($5.falseList, next());
+																		}
+																		else	$$.nextList = merge($5.trueList, $5.falseList);
+																		emitOfAssignment($2.name, $5.name);  
+																		$$.breaksList = makeNewList();}
+			|	ID ASSIGN Exp SC {	varNameExists($1.name); 
+									typesAssignable(getVarType($1.name), $3.type);									
+									$$.type = "NON_SINGLE_DEC"; 
+									if($3.type == "BOOL"){
+										bp($3.trueList, next());
+										bp($3.falseList, next());										
+									}
+									else	$$.nextList = merge($3.trueList, $3.falseList); 
+									emitOfAssignment($1.name, $3.name); 
+									$$.breaksList = makeNewList();}
+			|	PRINT ID SC {varNameExists($2.name); checkPrintAllowed(getVarType($2.name)); $$.type = "NON_SINGLE_DEC"; emitOfPrintFunc("print", $2.name); $$.nextList = makeNewList(); $$.breaksList = makeNewList();}
+			|	PRINT STRING SC {	$$.type = "NON_SINGLE_DEC"; 
+									ostringstream os; 
+									os << "print " << $2.name; 
+									emit(os.str()); 
+									$$.nextList = makeNewList(); 
+									$$.breaksList = makeNewList();}
+			|	INPUT ID SC {varNameExists($2.name); checkInputAllowed(getVarType($2.name)); $$.type = "NON_SINGLE_DEC"; emitOfInputFunc("input", $2.name); $$.nextList = makeNewList(); $$.breaksList = makeNewList();}
+			|	ConflictSolverForIF %prec DEGEL {$$.type = "NON_SINGLE_DEC"; $$.nextList = merge($1.falseList, $1.trueList); $$.breaksList = $1.breaksList;}
+			|	ConflictSolverForIF ELSE {openNewScope();} N M Statement {closeCurrentScope($6.type); $$.type = "NO SCOPE"; bp ($1.falseList, $5.nextList.front() ); $$.nextList= merge(merge($1.trueList, $6.nextList), $4.nextList); $$.breaksList = merge($1.breaksList, $6.breaksList);} 
+			|	WHILE M LP Exp RP {openNewScope(); wCount++;} M Statement {wCount--; closeCurrentScope($8.type); isBool($4.type); $$.type = "NON_SINGLE_DEC"; bp($8.nextList, $2.nextList.front()); bp($4.trueList, $7.nextList.front() ); $$.nextList = merge($4.falseList, $8.breaksList); ostringstream os; os << "goto " << $2.nextList.front(); emit(os.str()); $$.breaksList = makeNewList();}
+			|	BREAK N SC {checkBreakAllowed(); $$.type = "NON_SINGLE_DEC"; $$.breaksList = $2.nextList;}
+			|	SWITCH LP Exp N RP LC CasesList RC {checkSwitchAllowed(isLengthType($3.type)); 
+													$$.type = "NON_SINGLE_DEC"; 
+													bp($4.nextList, next()); 
+
+													while (!($7.stackOfValues.empty())) {
+														ostringstream os; 
+														os << "if s[" 
+														<< getOffsetByName($3.name) 
+														<< "] == " 
+														<< getValByTypeInSwitch($3.name, 
+														$7.stackOfValues.top(), 
+														$7.stackOfTypes.top()) 
+														<< " goto " 
+														<< $7.ezerStack.top();
+														emit(os.str());
+														$7.stackOfValues.pop();
+														$7.stackOfTypes.pop();
+														$7.ezerStack.pop();
+													} 
+													$$.nextList = merge($7.nextList, makelist(next())); 
+													$$.breaksList = $7.breaksList;
+													emit("goto ");}
+			;
+			
+ConflictSolverForIF : IF LP Exp RP {openNewScope();} M Statement {	closeCurrentScope($7.type); isBool($3.type); bp($3.trueList, $6.nextList.front()); $$.nextList = makeNewList(); $$.falseList = $3.falseList; $$.trueList=$7.nextList; $$.breaksList = $7.breaksList;}			
+			
+CasesList	:	CaseStat CasesList {	$$.ezerStack = $2.ezerStack; 
+										$$.ezerStack.push($1.ezer); 
+										$$.stackOfValues = $2.stackOfValues; 
+										$$.stackOfValues.push($1.value); 
+										$$.stackOfTypes = $2.stackOfTypes; 
+										$$.stackOfTypes.push($1.type); 
+										$$.nextList = merge($1.nextList, $2.nextList); 
+										$$.breaksList = merge($1.breaksList, $2.breaksList);}
+			|	CaseStat {	$$.ezerStack.push($1.ezer); 
+							$$.stackOfValues.push($1.value); 
+							$$.stackOfTypes.push($1.type); 
+							$$.nextList = $1.nextList; 
+							$$.breaksList = $1.breaksList;}
+			;
+			
+CaseStat	:	CASE NUM SpecType COL {openNewScope();} M Statement {closeCurrentScope($6.type);} BREAK SC {	$$.ezer = $6.nextList.front(); 
+																											$$.value = $2.name; 
+																											$$.type = $3.type; 
+																											$$.nextList = merge($7.nextList, makelist(next()));
+																											emit("goto ");
+																											$$.breaksList = $7.breaksList;}
+			;
+			
+SpecType	:	CUBIT {$$.type = "CUBIT";}
+				|	FOOT {$$.type = "FOOT";}
+				|	METER {$$.type = "METER";}
+				;
+
+Type		:	SpecType {$$.type = $1.type;}
+			|	INT {$$.type = "INT";}
+			|	BOOL {$$.type = "BOOL";}
+			;
+			
+Exp			:	LP Exp RP {$$.type = $2.type; $$.name = $2.name; $$.trueList = $2.trueList; $$.falseList = $2.falseList; $$.nextList = makeNewList();}
+			|	Exp PLUS Exp {checkPlusAllowed($1.type,$3.type); $$.type = $1.type; $$.name = newTemp(); addVarToScope($$.name, $$.type); emitOfOpExp($$.name, $1.name, $3.name, "+"); $$.nextList = makeNewList(); $$.trueList = makeNewList(); $$.falseList = makeNewList();}
+			|	Exp MINUS Exp {checkMinusAllowed($1.type,$3.type); $$.type = $1.type; $$.name = newTemp(); addVarToScope($$.name, $$.type); emitOfOpExp($$.name, $1.name, $3.name, "-"); $$.trueList = makeNewList(); $$.falseList = makeNewList();}
+			|	Exp MULT Exp {checkMultAllowed($1.type,$3.type); $$.type = resultTypeMult($1.type,$3.type); $$.name = newTemp(); addVarToScope($$.name, $$.type); emitOfOpExp($$.name, $1.name, $3.name, "*"); $$.nextList = makeNewList(); $$.trueList = makeNewList(); $$.falseList = makeNewList();}
+			|	Exp DIV Exp {checkDivAllowed($1.type,$3.type); $$.type = resultTypeDiv($1.type,$3.type); $$.name = newTemp(); addVarToScope($$.name, $$.type); emitOfOpExp($$.name, $1.name, $3.name, "/"); $$.nextList = makeNewList(); $$.trueList = makeNewList(); $$.falseList = makeNewList();}
+			|	ID {varNameExists($1.name); 
+					$$.type = getVarType($1.name); 
+					$$.name = newTemp(); 
+					addVarToScope($$.name, $$.type); 
+					emitOfIdExp($$.name, $1.name);
+					int expOffset = getOffsetByName($$.name);
+					if($$.type == "BOOL"){
+						ostringstream os;	
+						$$.falseList = makelist(next());
+						os << "if s[" << expOffset << "] == 0 goto ";
+						emit(os.str());
+						$$.trueList = makelist(next());
+						emit("goto ");
+					}
+					else {
+						$$.trueList = makeNewList(); 
+						$$.falseList = makeNewList();
+					}
+					$$.nextList = makeNewList();}
+			|	NUM {$$.type = "INT"; $$.name = newTemp(); addVarToScope($$.name, $$.type); emitOfNumExp($$.name, $1.name); $$.nextList = makeNewList(); $$.trueList = makeNewList(); $$.falseList = makeNewList();}
+			|	NUM SpecType {$$.type = $2.type; $$.name = newTemp(); addVarToScope($$.name, $$.type); emitOfNumExp($$.name, $1.name); $$.nextList = makeNewList(); $$.trueList = makeNewList(); $$.falseList = makeNewList();}
+			|	TRUE {$$.type = "BOOL"; $$.name = newTemp(); addVarToScope($$.name, $$.type); emitOfBoolExp($$.name, "1"); $$.trueList = makelist(next()); emit("goto "); $$.nextList = makeNewList(); $$.falseList = makeNewList();}
+			|	FALSE {$$.type = "BOOL"; $$.name = newTemp(); addVarToScope($$.name, $$.type); emitOfBoolExp($$.name, "0"); $$.falseList = makelist(next()); emit("goto "); $$.nextList = makeNewList(); $$.trueList = makeNewList();}
+			|	NOT Exp {	isBool($2.type); 
+							$$.type = "BOOL"; 
+							$$.name = newTemp(); 
+							addVarToScope($$.name, $$.type); 							
+							emitOfNotExp($$.name, $2.name); 
+							ostringstream os;
+							int expOffset = getOffsetByName($$.name);
+							$$.trueList = merge($1.falseList, makelist(next()));
+							os << "if s[" << expOffset << "] == 1 goto ";
+							emit(os.str());	
+							$$.falseList = merge($1.trueList, makelist(next()));
+							emit("goto ");
+							$$.nextList = makeNewList();}
+			|	Exp OR M Exp {	isBool($1.type); 
+								isBool($4.type); 
+								$$.type = "BOOL"; 
+								$$.name = newTemp(); 
+								addVarToScope($$.name, $$.type);
+								bp($1.falseList, $3.nextList.front());
+								bp($1.trueList, $3.nextList.front());
+								bp($4.falseList, next());
+								bp($4.trueList, next());
+								emitOfORExp($$.name, $1.name, $4.name); 
+								ostringstream os;	
+								int expOffset = getOffsetByName($$.name);
+								$$.falseList = makelist(next());
+								os << "if s[" << expOffset << "] == 0 goto ";
+								emit(os.str());
+								$$.trueList = makelist(next());
+								emit("goto ");
+								$$.nextList = makeNewList();}
+			|	Exp AND M Exp {	isBool($1.type); 
+								isBool($4.type); 
+								$$.type = "BOOL"; 
+								$$.name = newTemp(); 
+								addVarToScope($$.name, $$.type);  
+								bp($1.falseList, $3.nextList.front());
+								bp($1.trueList, $3.nextList.front());
+								bp($4.falseList, next());
+								bp($4.trueList, next());
+								emitOfAndExp($$.name, $1.name, $4.name); 
+								ostringstream os;	
+								int expOffset = getOffsetByName($$.name);
+								$$.falseList = makelist(next());
+								os << "if s[" << expOffset << "] == 0 goto ";
+								emit(os.str());
+								$$.trueList = makelist(next());
+								emit("goto ");
+							   $$.nextList = makeNewList();}  
+			|	Exp REL_OP Exp {checkRelOpAllowed($1.type,$3.type); 
+								$$.type = "BOOL"; 
+								$$.name = newTemp(); 
+								addVarToScope($$.name, $$.type);
+								getValForRelOp($1.name, $3.name);
+								getAnsForRelOp($$.name, $1.name, $3.name, $2.name);
+								if ($2.name == "<=") { 
+									$$.falseList = makelist(next());
+									emitOfRelOpExp($1.name, $3.name, ">"); 
+									$$.trueList = makelist(next()); 
+									}
+								else if ($2.name == ">=") { 
+									$$.falseList = makelist(next());
+									emitOfRelOpExp($1.name, $3.name, "<"); 
+									$$.trueList = makelist(next()); 
+								} 
+								else {
+									$$.trueList = makelist(next());
+									emitOfRelOpExp($1.name, $3.name, $2.name); 
+									$$.falseList = makelist(next());
+								}
+								emit("goto "); 
+								$$.nextList = makeNewList();};
+M 			:   {$$.nextList = makelist(next());};
+N 			:   {$$.nextList = makelist(next()); emit("goto ");};
+			
+%%
+
+int yyerror(const char* message){
+	exit(0);
+}
+
+void fromMtoC (string st){
+	ostringstream os;
+	int calc_offset = getOffsetByName(st);
+	os << "s[" << calc_offset << "]=" << "s[" << calc_offset << "]" << " * 125";
+	emit(os.str());
+	//clear
+	os.str("");
+	os.clear();
+	os << "s[" << calc_offset << "]=" << "s[" << calc_offset << "]" << " / 57";
+	emit(os.str());
+}
+
+void fromCtoM (string st){
+	ostringstream os;
+	int calc_offset = getOffsetByName(st);
+	os << "s[" << calc_offset << "]=" << "s[" << calc_offset << "]" << " * 456";
+	emit(os.str());	
+	//clear
+	os.str("");
+	os.clear();
+	os << "s[" << calc_offset << "]=" << "s[" << calc_offset << "]" << " / 1000";
+	emit(os.str());
+}
+
+void fromMtoF (string st){
+	ostringstream os;
+	int calc_offset = getOffsetByName(st);
+	os << "s[" << calc_offset << "]=" << "s[" << calc_offset << "]" << " * 1250";
+	emit(os.str());
+	//clear
+	os.str("");
+	os.clear();
+	os << "s[" << calc_offset << "]=" << "s[" << calc_offset << "]" << " / 381";
+	emit(os.str());
+}
+
+void fromFtoM (string st){
+	ostringstream os;	
+	int calc_offset = getOffsetByName(st);
+	os << "s[" << calc_offset << "]=" << "s[" << calc_offset << "]" << " * 3048";
+	emit(os.str());
+	//clear
+	os.str("");
+	os.clear();
+	os << "s[" << calc_offset << "]=" << "s[" << calc_offset << "]" << " / 10000";
+	emit(os.str());
+}
+
+void fromFtoC (string st){
+	fromFtoM(st);
+	fromMtoC(st);
+}
+
+void fromCtoF (string st){
+	fromCtoM(st);
+	fromMtoF(st);
+}
+
+list<int> makeNewList(){
+	list<int> nList;
+	return nList;
+}
+
+ void closeCurrentScope(string str){
+	int e_scope = scopes.top();
+	scopes.pop();
+	int s_scope=0;
+	if (!(scopes.empty())) {s_scope=scopes.top();}
+	for(int i =  s_scope; i < e_scope; i++){var_map.erase(i);}
+}
+
+ void checkMinusAllowed(string type1, string type2){
+	if((type1 == "INT" && type2 == "INT") || (isLengthType(type1) && isLengthType(type2))){return;}
+	exit(1);
+}
+
+void checkPlusAllowed(string type1, string type2){
+	if((type1 == "INT" && type2 == "INT") || (isLengthType(type1) && isLengthType(type2))){return;}
+	exit(1);
+}
+
+ bool isLengthType(string type){
+	if(type == "CUBIT" || type == "FOOT" || type == "METER"){return true;}
+	return false;
+}
+
+ void checkSwitchAllowed(bool type){
+	if (type){return;}
+	exit(1);	
+}
+
+void isBool(string type){
+	if(type == "BOOL"){return;}
+	exit(1);
+}
+ 
+void checkDivAllowed(string type1, string type2){
+	if((type1 == "INT" && type2 == "INT") || (isLengthType(type1) && isLengthType(type2))){return;}
+	if ((isLengthType(type1) && type2 == "INT")){return;}
+	exit(1);
+}
+ 
+void checkMultAllowed(string type1, string type2){
+	if(type1 == "INT" && type2 == "INT"){return;}
+	if((type1 == "INT" && isLengthType(type2)) || (isLengthType(type1) && type2 == "INT")){return;}
+	exit(1);	
+}
+ 
+ void checkRelOpAllowed(string type1, string type2){
+	if((type1 == "INT" && type2 == "INT") || (isLengthType(type1) && isLengthType(type2))){return;}
+	exit(1);
+}
+ 
+ void checkInputAllowed(string type){
+	if ( type == "INT" ){return;}
+	if (isLengthType(type)){return;}
+	exit(1);
+}
+ 
+void checkPrintAllowed(string type){
+	if ( type == "INT" ){return;}
+	if (isLengthType(type)){return;}
+	exit(1);
+}
+ 
+void checkBreakAllowed(){
+	if(wCount >= 1){return;}
+	exit(1);	
+}
+ 
+void typesAssignable(string type1, string type2){
+	if	((isLengthType(type1) && isLengthType(type2)) || (type1 == "BOOL" && type2 == "BOOL") || (type1 == "INT" && type2 == "INT")){return;}
+	exit(1);	
+}
+
+void openNewScope(){
+	if (scopes.empty()){
+		scopes.push(0);
+		return;
+	}
+	scopes.push(scopes.top());
+}
+
+void addVarToScope(string name, string type){
+	//local helper params
+	var ezer;
+	ezer.type = type;
+	ezer.name = name;
+	int target_offset;
+	
+	for(int i = 0; i < var_map.size(); i++){
+		if(var_map[i].name == name){exit(1);}
+	}
+	
+	target_offset = scopes.top();
+	ezer.offset = target_offset;
+	var_map.insert(make_pair(target_offset, ezer));
+	target_offset++;
+	scopes.pop();
+	scopes.push(target_offset);
+}
+
+void varNameExists(string name){
+	for(int i = 0; i < var_map.size(); i++){
+		if(var_map[i].name == name){return;}
+	}
+	exit(1);
+}
+
+string resultTypeMult(string type1, string type2){
+	if( type1 == "INT"){return type2;}
+	return type1;
+}
+
+string resultTypeDiv(string type1, string type2){
+	if( isLengthType(type1) && isLengthType(type2) ){return "INT";}
+	if( (type1 == "INT") && (type2 == "INT") ) {return "INT";}
+	return type1;
+}
+
+string getVarType(string varname){
+	for(int i = 0; i < var_map.size(); i++){
+		if(varname == var_map[i].name){return var_map[i].type;}
+	}
+	return NULL;
+}
+
+string getTypeByName(string varname){
+	for(int i = 0; i < var_map.size(); i++){
+		if(varname == var_map[i].name){return var_map[i].type;}
+	}
+	//not found
+	return "";
+}
+
+int getOffsetByName(string varname){
+	for(int i = 0; i < var_map.size(); i++){
+		if(varname == var_map[i].name){return var_map[i].offset;}
+	}
+}
+
+int getValByTypeInSwitch(string exp, string value, string type){
+	string typeOfExp = getTypeByName(exp);
+	if (typeOfExp != type){
+		if (type == "FOOT" && typeOfExp == "METER"){ return ((atoi(value.c_str())* 3048) / 10000);}
+		else  if (type == "FOOT" && typeOfExp == "CUBIT"){ return ((((atoi(value.c_str())* 3048) / 10000) * 125) /57);}
+		else  if (type == "CUBIT" && typeOfExp == "METER"){ return ((atoi(value.c_str())* 456) / 1000);}
+		else  if (type == "CUBIT" && typeOfExp == "FOOT"){ return ((((atoi(value.c_str())* 456) / 1000) * 125) / 57);}
+		else  if (type == "METER" && typeOfExp == "FOOT"){ return ((atoi(value.c_str())* 1250) / 381);}
+		else  if (type == "METER" && typeOfExp == "CUBIT"){ return ((atoi(value.c_str())* 125) / 57);}
+		else {emit("ERROR");}
+	}
+	return atoi(value.c_str());
+}
+
+void getAnsForRelOp(string name, string param1, string param2, string op){
+	ostringstream os;
+	int tmp1, tmp2, tmp3;
+	//calc offsets
+	int param1_offset = getOffsetByName(param1);
+	int param2_offset = getOffsetByName(param2);
+	int name_offset = getOffsetByName(name);
+	list<int> list1;
+	list<int> list2;
+	tmp1 = next();
+	
+	if (op == "<="){
+		os << "if s[" << param1_offset << "] > s[" << param2_offset << "] goto "; 
+		emit(os.str());
+		//clear
+		os.str("");
+		os.clear();
+		os << "s[" << name_offset << "]=1";
+		emit(os.str());
+		//difine goto
+		tmp2 = next();
+		emit("goto ");
+		//clear
+		os.str("");
+		os.clear();
+		tmp3 = next();
+		os << "s[" << name_offset << "]=0";
+		emit(os.str());
+	}
+	else if (op == ">="){
+		os << "if s[" << param1_offset << "] < s[" << param2_offset << "] goto "; 
+		emit(os.str());
+		//clear
+		os.str("");
+		os.clear();
+		os << "s[" << name_offset << "]=1";
+		emit(os.str());
+		//difine goto
+		tmp2 = next();
+		emit("goto ");
+		//clear
+		os.str("");
+		os.clear();
+		tmp3 = next();
+		os << "s[" << name_offset << "]=0";
+		emit(os.str());
+	}
+	else { //not ">=" and not "<="
+		os << "if s[" << param1_offset << "] " << op << " s[" << param2_offset << "] goto "; 
+		emit (os.str());
+		//clear
+		os.str("");
+		os.clear();
+		os << "s[" << name_offset << "]=0";
+		emit(os.str());
+		//difine goto
+		tmp2 = next();
+		emit("goto ");
+		//clear
+		os.str("");
+		os.clear();
+		tmp3 = next();
+		os << "s[" << name_offset << "]=1";
+		emit (os.str());
+	}
+	list1 = makelist(tmp1);
+	bp(list1,tmp3);
+	list2 = makelist(tmp2);
+	bp(list2,next());	
+}
+
+void getValForRelOp(string param1, string param2){
+	//get types
+	string type_param1 = getTypeByName(param1);
+	string type_param2 = getTypeByName(param2);
+	if((isLengthType(type_param1)) && (isLengthType(type_param2)) && (type_param1 != type_param2)){
+		if (type_param1 == "FOOT" && type_param2 == "METER") {fromMtoF(param2);}
+		else  if (type_param1 == "FOOT" && type_param2 == "CUBIT") {fromCtoF(param2);}
+		else  if (type_param1 == "CUBIT" && type_param2 == "METER") {fromMtoC(param2);}	
+		else  if (type_param1 == "CUBIT" && type_param2 == "FOOT") {fromFtoC(param2);}
+		else  if (type_param1 == "METER" && type_param2 == "FOOT") {fromFtoM(param2);}
+		else  if (type_param1 == "METER" && type_param2 == "CUBIT") {fromCtoM(param2);}
+		else 
+			{emit("ERROR");	}
+	}
+}
+
+void emitOfBoolExp(string name, string val){
+	ostringstream os;
+	//calc offsets
+	int calc_offset = getOffsetByName(name);
+	//buffer
+	os << "s[" << calc_offset << "]=" << val;
+	emit(os.str());
+}
+
+void emitOfNotExp(string exp, string name){
+	ostringstream os;
+	//calc offsets
+	int name_offset = getOffsetByName(name);
+	int exp_offset = getOffsetByName(exp);
+	//buffer
+	os << "s[" << exp_offset << "]=1 - " << "s[" << name_offset << "]";
+	emit(os.str());
+}
+
+void emitOfOpExp(string name, string param1, string param2, string op){
+	ostringstream os;
+	//find types
+	string param1_type;
+	param1_type = getTypeByName(param1);
+	string param2_type;
+	param2_type = getTypeByName(param2);
+	if (isLengthType(param1_type) && isLengthType(param2_type) && (param1_type != param2_type) ){
+		if (param1_type == "FOOT" && param2_type == "CUBIT") {fromCtoF(param2);}
+		else  if (param1_type == "FOOT" && param2_type == "METER") {fromMtoF(param2);}	
+		else  if (param1_type == "METER" && param2_type == "CUBIT") {fromCtoM(param2);}
+		else  if (param1_type == "METER" && param2_type == "FOOT") {fromFtoM(param2);}
+		else  if (param1_type == "CUBIT" && param2_type == "FOOT") {fromFtoC(param2);}
+		else  if (param1_type == "CUBIT" && param2_type == "METER") {fromMtoC(param2);}
+		else 
+			{emit("ERROR");}
+	}
+	//calc offsets
+	int param1_offset = getOffsetByName(param1);
+	int param2_offset = getOffsetByName(param2);
+	int name_offset = getOffsetByName(name);
+	//buffer
+	os << "s[" << name_offset << "]" << "=" << "s[" << param1_offset << "] " << op << " s[" << param2_offset << "]" ; 
+	emit(os.str());
+}
+
+void emitOfAssignment(string id, string exp){
+	ostringstream os;
+	//calc offsets and types
+	string expType = getTypeByName(exp);
+	int exp_offset= getOffsetByName(exp);
+	string idType = getTypeByName(id);
+	int id_offset= getOffsetByName(id);
+	if (isLengthType(expType) && isLengthType(idType) && (idType != expType)){
+		if (idType == "FOOT" && expType == "METER") {fromMtoF(exp);}
+		else  if (idType == "FOOT" && expType == "CUBIT") {fromCtoF(exp);}	
+		else  if (idType == "CUBIT" && expType == "METER") {fromMtoC(exp);}	
+		else  if (idType == "CUBIT" && expType == "FOOT") {fromFtoC(exp);}
+		else  if (idType == "METER" && expType == "FOOT") {fromFtoM(exp);}
+		else  if (idType == "METER" && expType == "CUBIT") {fromCtoM(exp);}
+		else 
+			{emit("ERROR");}
+	}
+	//buffer
+	os << "s[" << id_offset << "]=" << "s[" << exp_offset << "]"; 
+	emit(os.str());
+}
+
+void emitOfNumExp(string exp, string name){
+	ostringstream os;
+	//get type
+	int exp_offset = getOffsetByName(exp);
+	//buffer
+	os << "s[" << exp_offset << "]=" << name ;
+	emit(os.str());
+}
+
+void emitOfIdExp(string exp, string name){
+	ostringstream os;
+	//calc offsets
+	int name_offset = getOffsetByName(name);
+	int exp_offset = getOffsetByName(exp);
+	//buffer
+	os << "s[" << exp_offset << "]=" << "s[" << name_offset << "]";
+	emit(os.str());
+}
+
+void emitOfORExp(string exp, string param1, string param2){
+	list<int> list1;
+	list<int> list2;
+	ostringstream os;
+	//calc offsets
+	int param1_offset = getOffsetByName(param1);
+	int param2_offset = getOffsetByName(param2);
+	int exp_offset= getOffsetByName(exp);
+	
+	//make tmp list1
+	list1 = makelist(next());
+	os << "if s[" << param1_offset << "] != " << "0 goto ";
+	emit(os.str());
+	//clear
+	os.str("");
+	os.clear();
+	os << "s[" << exp_offset << "]=" << "s[" << param2_offset << "]";
+	emit(os.str());
+	//make tmp list2
+	list2 = makelist(next());
+	emit("goto ");
+	bp(list1,next());
+	//clear
+	os.str("");
+	os.clear();
+	os << "s[" << exp_offset << "]=" << "1";
+	emit(os.str());
+	bp(list2,next());	
+}
+
+void emitOfPrintFunc(string exp, string name){
+	ostringstream os;
+	//calc offsets
+	int name_offset = getOffsetByName(name);
+	//buffer
+	os << exp <<" s[" << name_offset <<"]";
+	emit(os.str());
+}
+
+void emitOfInputFunc(string exp, string name){
+	ostringstream os;
+	//calc offsets
+	int name_offset = getOffsetByName(name);
+	//buffer
+	os << exp <<" s[" << name_offset <<"]";
+	emit(os.str());
+}
+
+void emitOfRelOpExp(string param1, string param2, string op){
+	ostringstream os;
+	//calc offsets
+	int param1_offset = getOffsetByName(param1);
+	int param2_offset = getOffsetByName(param2);
+	//buffer
+	os << "if s[" << param1_offset << "] " << op << " s[" << param2_offset << "] goto "; 
+	emit(os.str());	
+}
+
+void emitOfAndExp(string exp, string param1, string param2){
+	ostringstream os;
+	//calc offsets
+	int param1_offset = getOffsetByName(param1);
+	int param2_offset = getOffsetByName(param2);
+	int exp_offset= getOffsetByName(exp);
+	//buffer
+	os << "s[" << exp_offset << "]=" << "s[" << param1_offset << "] * s[" << param2_offset << "]";
+	emit(os.str());
+}
+
+int main()
+{ 	
+	wCount = 0;
+	counter = 1;
+	yyparse();
+	printBuffer();
+}	
