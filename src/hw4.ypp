@@ -1,4 +1,5 @@
 %{
+	#include "bp.hpp"
 	#include "hw4.hpp"
 	#include "output.hpp"
 	#include <stdlib.h>
@@ -25,6 +26,8 @@
 
 	stack<int> scopes;
 	map<int,var> var_map;
+	
+	int TempVarCounter = 0;
 
 	//validation func
 	void typesCompatible(YYSTYPE left, YYSTYPE right);
@@ -341,6 +344,12 @@ void ifNotInWhileExit(){
 		exit(1);
 	}
 }
+
+
+string newTemp(){
+	return "t" + itoa(TempVarCounter++);
+}
+
 
 int main()
 {
