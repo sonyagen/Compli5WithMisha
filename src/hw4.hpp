@@ -7,6 +7,8 @@ using namespace std;
 typedef struct{
     string	name;
     string	type;
+	string  var;
+	string value;
 } yystype;
 
 #define YYSTYPE yystype

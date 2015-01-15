@@ -33,7 +33,7 @@
 "int" {  return INT; }
 "print" {  return PRINT; }
 "input" {  return INPUT; }
-\"[^"]*\" { return STRING; }
+\"[^"]*\" { yylval.value = yytext; return STRING; }
 "true" {  return TRUE; }
 "false" {  return FALSE; }
 "if" {  return IF; }
@@ -45,7 +45,7 @@
 "switch" {  return SWITCH; }
 "case" {  return CASE; }
 
-[1-9][0-9]*|0 {  return NUM; }
+[1-9][0-9]*|0 {  yylval.value = yytext; return NUM; }
 
 [a-zA-Z]+ { 
     yylval.name = yytext;

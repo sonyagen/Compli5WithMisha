@@ -22,6 +22,7 @@
 		string name;
 		string type;
 		int offset;
+		string var;
 	} var;
 
 	stack<int> scopes;
@@ -87,12 +88,12 @@ Statements	:	Statements Statement
 
 Statement	:	LC {startScope();} Statements {endScopeWrapper("Close");} RC {$$.type="FakeClose";}
 			|	Type ID SC {addVarToScope($2.name, $1.type); $$.type="Close";}
-			| 	Type ID {addVarToScope($2.name, $1.type);} ASSIGN Exp SC {typesCompatible($1,$5); $$.type="Close";}
-			|	ID ASSIGN Exp SC {ifVarNotDeclaredExit($1.name); typesCompatible(getVar($1), $3); $$.type="FakeClose";}
-			|	PRINT ID SC {ifVarNotDeclaredExit($2.name); ifNotNumExit(getVar($2)); $$.type="FakeClose";}
-			|	PRINT STRING SC {$$.type="FakeClose";}
-			|	INPUT ID SC {ifVarNotDeclaredExit($2.name); ifNotNumExit(getVar($2)); $$.type="FakeClose";}
-			|	PrefixIF %prec M {$$.type="FakeClose"; /*cout << "PrefixIF is " << $1.type << endl;*/ ifNotBoolExit($1); }
+			| 	Type ID {addVarToScope($2.name, $1.type);} ASSIGN Exp SC {typesCompatible($1,$5); $$.type="Close"; genCodeAssign($2.name,$5.type, $5.var);}
+			|	ID ASSIGN Exp SC {ifVarNotDeclaredExit($1.name); typesCompatible(getVar($1), $3); $$.type="FakeClose"; genCodeAssign($1.name,$3.type,$3.var);}
+			|	PRINT ID SC {ifVarNotDeclaredExit($2.name); ifNotNumExit(getVar($2)); $$.type="FakeClose"; genCodePrint($2.name);}
+			|	PRINT STRING SC {$$.type="FakeClose"; emit("print "+ $2.value);}
+			|	INPUT ID SC {ifVarNotDeclaredExit($2.name); ifNotNumExit(getVar($2)); $$.type="FakeClose"; genCodeInput($2.name);}
+			|	PrefixIF %prec M {$$.type="FakeClose"; ifNotBoolExit($1); }
 			|	PrefixIF ELSE {startScope();} Statement { endScopeWrapper($4.type); ifNotBoolExit($1); $$.type="FakeClose";}
 			|	WHILE LP Exp RP {startScope(); WhileLoopCount++;} Statement {ifNotBoolExit($3); endScopeWrapper($6.type); WhileLoopCount--; $$.type="FakeClose";}
 			|	BREAK SC {ifNotInWhileExit(); $$.type="FakeClose";}
@@ -117,24 +118,73 @@ Type	:	CurrencyType {$$.type = $1.type;}
 		|	BOOL {$$.type = "BOOL";}
 		;
 		
-Exp	:	LP Exp RP {$$.type = $2.type;}
-	|	Exp PLUS Exp {numopCompatible($1,$3); $$.type=$1.type;}
-	|	Exp MINUS Exp {numopCompatible($1,$3); $$.type=$1.type;}
-	|	Exp MULT Exp {$$.type = getMultTypeOrExit($1,$3);}
-	|	Exp DIV Exp {$$.type = getDivTypeOrExit($1,$3);}
-	|	ID {ifVarNotDeclaredExit($1.name); $$.type = getVar($1).type;}
-	|	NUM {$$.type="INT";}
-	|	NUM CurrencyType {$$.type=$2.type;}
+Exp	:	LP Exp RP {$$.type = $2.type; $$.var = $2.var;}
+	|	Exp PLUS Exp {numopCompatible($1,$3); $$.type=$1.type; $$.var = genCodeExp($1,"+",$3);}
+	|	Exp MINUS Exp {numopCompatible($1,$3); $$.type=$1.type; $$.var = genCodeExp($1,"-",$3);}
+	|	Exp MULT Exp {$$.type = getMultTypeOrExit($1,$3); $$.var = genCodeExp($1,"*",$3);}
+	|	Exp DIV Exp {$$.type = getDivTypeOrExit($1,$3); $$.var = genCodeExp($1,"/",$3);}
+	|	ID {ifVarNotDeclaredExit($1.name); $$.type = getVar($1).type;  $$.var = getVar($1).var;}
+	|	NUM {$$.type="INT"; $$.var = $1.value;}
+	|	NUM CurrencyType {$$.type=$2.type; $$.var = $1.value;}
 	|	TRUE {$$.type="BOOL";}
 	|	FALSE {$$.type="BOOL";}
 	|	NOT Exp {ifNotBoolExit($2); $$.type="BOOL";}
-	|	Exp OR Exp {logOpCompatible($1,$3); $$.type="BOOL";}
+	|	Exp OR Exp {logOpCompatible($1,$3); $$.type="BOOL"; }
 	|	Exp AND Exp {logOpCompatible($1,$3); $$.type="BOOL";}
 	|	Exp REL_OP Exp {numopCompatible($1,$3); $$.type="BOOL";}
 ;
 
 %%
 
+string coerseType(string typeTo, string TypeFrom, String var){
+	if(typeFrom==typeTo) return var;
+	string newVar = newTemp();
+	if(typeFrom=="EURO") { emit(newVar + "=" + var + "* 70"); }
+	else if (typeFrom=="DOLLAR") { emit(newVar + "=" + var + "* 65"); }
+	
+	if(typeTo=="EURO") { emit(newVar + "=" + newVar + "/ 70"); }
+	else if (typeTo=="DOLLAR") { emit(newVar + "=" + newVar + "/ 65"); }
+	
+	return newVar;
+}
+
+void genCodeAssign(string idName, string ExpType, string expVar){
+	expVar = coerseType(getVar(idName).type, ExpType, expVar);
+	emit(getVar(idName).var + "=" + expVar);
+}
+
+string genCodeExp(YYSTYPE v1, string op, YYSTYPE v2){
+	
+	string var1 = v1.var;
+	string var2 = v2.var;
+	
+	var2 = coerseType(v1.type, v2.type, var2);
+	
+	string newVar = newTemp();
+	emit(newVar + "=" + var1 + op + var2);
+	
+	return newVar;
+}
+
+void genCodePrint(string name){
+	emit("input " + getVar(name).var);
+}
+
+void genCodeInput(string name){
+	emit("input " + getVar(name).var);
+}
+
+string newTemp(){
+	string res = getCurrTemp();
+	TempVarCounter++;
+	return res;
+}
+
+string getCurrTemp(){
+	return "s[" + TempVarCounter + "]";
+}
+
+//////////////////////////////////////////////////////////////
 void yyerror(const char* c){
 	errorSyn(yylineno);
 	exit(1);
@@ -260,6 +310,8 @@ void addVarToScope(string name, string type)
 	ezer.name = name;
 	ezer.type = type;
 	int target_offset;
+	tempVarName = newTemp();
+
 	
 //	for(int i = 0; i < var_map.size(); i++)
 //	{
@@ -344,12 +396,6 @@ void ifNotInWhileExit(){
 		exit(1);
 	}
 }
-
-
-string newTemp(){
-	return "t" + itoa(TempVarCounter++);
-}
-
 
 int main()
 {
