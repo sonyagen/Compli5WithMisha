@@ -24,7 +24,7 @@ typedef struct{
 	
 	//PAY ATTENSION 
 	list<int> trueList;
-	list<int> faleList;
+	list<int> falseList;
 	list<int> nextList;
 	
 	//for Marker M
