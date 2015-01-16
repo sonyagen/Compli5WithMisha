@@ -189,7 +189,7 @@ void genCodeRelOpExp(YYSTYPE* a, string rel_op, YYSTYPE* b, YYSTYPE* res){
 		emit("if " + a->var + "==" + b->var + "goto ");
 		rel_op == "<=" ? rel_op = "<" : rel_op = ">";
 	}
-	(!res->trueList) ? 
+	(res->trueList != NULL) ? 
 		res->trueList = merge(res->trueList ,makelist(next())) : 
 		res->trueList = makelist(next());
 		
