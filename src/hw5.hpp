@@ -2,6 +2,7 @@
 #define _236360_
 
 #include <string>
+#include <list>
 using namespace std;
 
 typedef struct{

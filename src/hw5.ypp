@@ -68,6 +68,13 @@
 	string genCodeExp(YYSTYPE v1, string op, YYSTYPE v2);
 	string getCurrTemp();
 
+	//bool exp cod gen
+	void genCodeANDExp(YYSTYPE* a, YYSTYPE* b, YYSTYPE* res, int markerAddress);
+	void genCodeORExp(YYSTYPE* a, YYSTYPE* b, YYSTYPE* res, int markerAddress);
+	void genCodeNOTExp(YYSTYPE* a, YYSTYPE* res);
+	void genCodeTrueExp(YYSTYPE* a);
+	void genCodeFalseExp(YYSTYPE* a);
+	void genCodeRelOpExp(YYSTYPE* a, string rel_op, YYSTYPE* b, YYSTYPE* res);
 
 
 %}
