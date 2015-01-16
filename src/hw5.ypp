@@ -184,14 +184,19 @@ void genCodeFalseExp(YYSTYPE* a){
 }
 
 void genCodeRelOpExp(YYSTYPE* a, string rel_op, YYSTYPE* b, YYSTYPE* res){
+	list<int> alist;
 	if(rel_op=="<=" || rel_op==">="){
-		res->trueList = makelist(next());
+		//res->trueList = makelist(next());
+		alist = makelist(next());
 		emit("if " + a->var + "==" + b->var + "goto ");
 		rel_op == "<=" ? rel_op = "<" : rel_op = ">";
 	}
-	(res->trueList != NULL) ? 
-		res->trueList = merge(res->trueList ,makelist(next())) : 
-		res->trueList = makelist(next());
+	
+//	res->trueList != NULL) ? 
+//		res->trueList = merge(res->trueList ,makelist(next())) : 
+//		res->trueList = makelist(next());
+
+	res->trueList = merge(makelist(next()), alist)
 		
 	emit("if " + a->var + rel_op + b->var + "goto ");
 	
