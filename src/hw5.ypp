@@ -24,6 +24,8 @@
 		string type;
 		int offset;
 		string var;
+		list<int> trueList;
+		list<int> falseList;
 	} var;
 
 	stack<int> scopes;
@@ -38,8 +40,8 @@
 	void logOpCompatible(YYSTYPE left, YYSTYPE right);
 	bool isCurrency(YYSTYPE variable);
 	bool isCurrency(var variable);
-	var getVar(YYSTYPE var);
-	var getVar(var varname);
+	&var getVar(YYSTYPE var);
+	&var getVar(var varname);
 	void ifNotBoolExit(YYSTYPE variable);
 	string getMultTypeOrExit(YYSTYPE left, YYSTYPE right);
 	string getDivTypeOrExit(YYSTYPE left, YYSTYPE right);
@@ -79,6 +81,10 @@
 	//if while
 	void genCodeWhile(YYSTYPE* res, int markerOfExp, YYSTYPE* exp, int markerOfStat);
 	void genCodeIfStat(YYSTYPE* res ,YYSTYPE* exp, int markerAddress);
+	
+	//when assign to a bool var
+	void setListsToId(YYSTYPE id, YYSTYPE* exp);
+	void setListsFromId(YYSTYPE *res, YYSTYPE id);
 
 
 %}
@@ -110,21 +116,26 @@ Statements	:	Statements M Statement {$$.nextList = $3.nextList; bp($1.nextList,$
 
 Statement	:	LC {startScope();} Statements {endScopeWrapper("Close");} RC {$$.type="FakeClose";}
 			|	Type ID SC {addVarToScope($2.name, $1.type); $$.type="Close";}
-			| 	Type ID {addVarToScope($2.name, $1.type);} ASSIGN Exp SC {typesCompatible($1,$5); $$.type="Close"; genCodeAssign($2,$5.type, $5.var);}
-			|	ID ASSIGN Exp SC {ifVarNotDeclaredExit($1.name); typesCompatible(getVar($1), $3); $$.type="FakeClose"; genCodeAssign($1,$3.type,$3.var);}
+			| 	Type ID {addVarToScope($2.name, $1.type);} ASSIGN Exp SC {typesCompatible($1,$5); 
+				$$.type="Close"; genCodeAssign($2, $5.type, $5.var); setListsToId($2, &$5);}
+			|	ID ASSIGN Exp SC {ifVarNotDeclaredExit($1.name); typesCompatible(getVar($1), $3); 
+				$$.type="FakeClose"; genCodeAssign($1, $3.type, $3.var); setListsToId($1, &$3);}
 			|	PRINT ID SC {ifVarNotDeclaredExit($2.name); ifNotNumExit(getVar($2)); $$.type="FakeClose"; genCodePrint($2);}
 			|	PRINT STRING SC {$$.type="FakeClose"; emit("print "+ $2.value);}
 			|	INPUT ID SC {ifVarNotDeclaredExit($2.name); ifNotNumExit(getVar($2)); $$.type="FakeClose"; genCodeInput($2);}
 			|	PrefixIF %prec A {$$.type="FakeClose"; ifNotBoolExit($1); $$.nextList=$1.nextList;}
-			|	PrefixIF ELSE {startScope();} M Statement { endScopeWrapper($5.type); ifNotBoolExit($1); $$.type="FakeClose"; bp($1.nextList,$4.nextAddress);}
+			|	PrefixIF ELSE {startScope();} M Statement { endScopeWrapper($5.type); ifNotBoolExit($1); 
+				$$.type="FakeClose"; bp($1.nextList,$4.nextAddress);}
 			|	WHILE LP M Exp RP {startScope(); WhileLoopCount++;} M Statement 
 				{ifNotBoolExit($4); endScopeWrapper($8.type); WhileLoopCount--; $$.type="FakeClose";
 				genCodeWhile(&$$,$3.nextAddress,&$4,$7.nextAddress);}
 			|	BREAK SC {ifNotInWhileExit(); $$.type="FakeClose";}
-			|	SWITCH LP Exp RP LC { startScope(); } CasesList {} RC {ifNotCurrencyExit($3); endScopeWrapper("Close"); $$.type="FakeClose";}
+			|	SWITCH LP Exp RP LC { startScope(); } CasesList {} RC {ifNotCurrencyExit($3); 
+				endScopeWrapper("Close"); $$.type="FakeClose";}
 			;
 			
-PrefixIF 	: IF LP Exp RP { startScope();}  M Statement {$$.type=$3.type; endScopeWrapper($7.type); genCodeIfStat(&$$,&$3,$6.nextAddress);} ;	
+PrefixIF 	: IF LP Exp RP { startScope();}  M Statement {$$.type=$3.type; endScopeWrapper($7.type); 
+				genCodeIfStat(&$$,&$3,$6.nextAddress);} ;	
 
 CasesList	:	CaseStat CasesList
 			|	CaseStat
@@ -147,7 +158,8 @@ Exp	:	LP Exp RP {$$.type = $2.type; $$.var = $2.var;}
 	|	Exp MINUS Exp {numopCompatible($1,$3); $$.type=$1.type; $$.var = genCodeExp($1,"-",$3);}
 	|	Exp MULT Exp {$$.type = getMultTypeOrExit($1,$3); $$.var = genCodeExp($1,"*",$3);}
 	|	Exp DIV Exp {$$.type = getDivTypeOrExit($1,$3); $$.var = genCodeExp($1,"/",$3);}
-	|	ID {ifVarNotDeclaredExit($1.name); $$.type = getVar($1).type;  $$.var = getVar($1).var;}
+	|	ID {ifVarNotDeclaredExit($1.name); $$.type = getVar($1).type; 
+			$$.var = getVar($1).var; setListsFromId(&$$,$1);}
 	|	NUM {$$.type="INT"; $$.var = $1.value;}
 	|	NUM CurrencyType {$$.type=$2.type; $$.var = $1.value;}
 	|	TRUE {$$.type="BOOL"; genCodeTrueExp(&$$); }
@@ -161,6 +173,17 @@ Exp	:	LP Exp RP {$$.type = $2.type; $$.var = $2.var;}
 M	: {$$.nextAddress = next();} ;
 
 %%
+
+void setListsFromId(YYSTYPE *res,YYSTYPE id){
+	res->trueList = getVar(id).trueList; 
+	res->falseList = getVar(id).falseList;
+}
+
+void setListsToId(YYSTYPE id, YYSTYPE* exp){
+	&var v = geVar(id);
+	v.trueList = exp->trueList;
+	v.falseList = exp->falseList;
+}
 
 void genCodeWhile(YYSTYPE* res, int markerOfExp, YYSTYPE* exp, int markerOfStat){
 
@@ -439,7 +462,7 @@ void ifVarNotDeclaredExit(string name)
 	exit(1);
 }
 
-var getVar(YYSTYPE variable)
+&var getVar(YYSTYPE variable)
 {
 	ifVarNotDeclaredExit(variable.name);
 	for(int i = var_map.size()-1; i>=0 ;i--)
