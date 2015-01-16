@@ -104,7 +104,7 @@
 
 Prog		:	{startScope();} Statements {endScopeWrapper("Close");} ;
 
-Statements	:	Statements M Statement {$$.nextList = $3.nextList; bp($1.nextList,M.nextAddress);}
+Statements	:	Statements M Statement {$$.nextList = $3.nextList; bp($1.nextList,$2.nextAddress);}
 			|	Statement
 			;
 
@@ -116,7 +116,7 @@ Statement	:	LC {startScope();} Statements {endScopeWrapper("Close");} RC {$$.typ
 			|	PRINT STRING SC {$$.type="FakeClose"; emit("print "+ $2.value);}
 			|	INPUT ID SC {ifVarNotDeclaredExit($2.name); ifNotNumExit(getVar($2)); $$.type="FakeClose"; genCodeInput($2);}
 			|	PrefixIF %prec A {$$.type="FakeClose"; ifNotBoolExit($1); $$.nextList=$1.nextList;}
-			|	PrefixIF ELSE {startScope();} M Statement { endScopeWrapper($5.type); ifNotBoolExit($1); $$.type="FakeClose"; bp($1.nextList,$4.markerAddress);}
+			|	PrefixIF ELSE {startScope();} M Statement { endScopeWrapper($5.type); ifNotBoolExit($1); $$.type="FakeClose"; bp($1.nextList,$4.nextAddress);}
 			|	WHILE LP M Exp RP {startScope(); WhileLoopCount++;} M Statement 
 				{ifNotBoolExit($4); endScopeWrapper($8.type); WhileLoopCount--; $$.type="FakeClose";
 				genCodeWhile(&$$,$3.nextAddress,&$4,$7.nextAddress);}
