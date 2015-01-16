@@ -24,7 +24,7 @@
 "-" {  return MINUS;}
 "*" {  return MULT;}
 "/" {  return DIV;}
-"<="|">="|"=="|"!="|">"|"<" {  return REL_OP;}
+"<="|">="|"=="|"!="|">"|"<" {  yylval.value = yytext; return REL_OP;}
 "and" {  return AND; }
 "or" {  return OR; }
 "R" {  return RUBLE; }

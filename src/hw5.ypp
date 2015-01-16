@@ -85,7 +85,7 @@
 %left REL_OP
 %left PLUS MINUS
 %left MULT DIV
-%nonassoc M
+%nonassoc A
 %nonassoc ELSE
 %right NOT
 
@@ -104,7 +104,7 @@ Statement	:	LC {startScope();} Statements {endScopeWrapper("Close");} RC {$$.typ
 			|	PRINT ID SC {ifVarNotDeclaredExit($2.name); ifNotNumExit(getVar($2)); $$.type="FakeClose"; genCodePrint($2);}
 			|	PRINT STRING SC {$$.type="FakeClose"; emit("print "+ $2.value);}
 			|	INPUT ID SC {ifVarNotDeclaredExit($2.name); ifNotNumExit(getVar($2)); $$.type="FakeClose"; genCodeInput($2);}
-			|	PrefixIF %prec M {$$.type="FakeClose"; ifNotBoolExit($1); }
+			|	PrefixIF %prec A {$$.type="FakeClose"; ifNotBoolExit($1); }
 			|	PrefixIF ELSE {startScope();} Statement { endScopeWrapper($4.type); ifNotBoolExit($1); $$.type="FakeClose";}
 			|	WHILE LP Exp RP {startScope(); WhileLoopCount++;} Statement {ifNotBoolExit($3); endScopeWrapper($6.type); WhileLoopCount--; $$.type="FakeClose";}
 			|	BREAK SC {ifNotInWhileExit(); $$.type="FakeClose";}
@@ -137,15 +137,61 @@ Exp	:	LP Exp RP {$$.type = $2.type; $$.var = $2.var;}
 	|	ID {ifVarNotDeclaredExit($1.name); $$.type = getVar($1).type;  $$.var = getVar($1).var;}
 	|	NUM {$$.type="INT"; $$.var = $1.value;}
 	|	NUM CurrencyType {$$.type=$2.type; $$.var = $1.value;}
-	|	TRUE {$$.type="BOOL";}
-	|	FALSE {$$.type="BOOL";}
-	|	NOT Exp {ifNotBoolExit($2); $$.type="BOOL";}
-	|	Exp OR Exp {logOpCompatible($1,$3); $$.type="BOOL"; }
-	|	Exp AND Exp {logOpCompatible($1,$3); $$.type="BOOL";}
-	|	Exp REL_OP Exp {numopCompatible($1,$3); $$.type="BOOL";}
+	|	TRUE {$$.type="BOOL"; genCodeTrueExp(&$$); }
+	|	FALSE {$$.type="BOOL"; genCodeFalseExp(&$$);}
+	|	NOT Exp {ifNotBoolExit($2); $$.type="BOOL"; genCodeNOTExp(&$2,&$$);}
+	|	Exp OR M Exp {logOpCompatible($1,$4); $$.type="BOOL"; genCodeORExp(&$1,&$4,&$$,M.nextAddress); }
+	|	Exp AND M Exp {logOpCompatible($1,$4); $$.type="BOOL"; genCodeANDExp(&$1,&$4,&$$,M.nextAddress); }
+	|	Exp REL_OP Exp {numopCompatible($1,$3); $$.type="BOOL"; genCodeRelOpExp(&$1,$2.value,&$3,&$$);}
 ;
 
+M	: {$$.nextAddress = next();} ;
+
 %%
+
+void genCodeANDExp(YYSTYPE* a, YYSTYPE* b, YYSTYPE* res, int markerAddress){
+	bp(a->trueList, markerAddress);
+	res->falseList = merge(a->falseList,b->falseList);
+	res->trueList = b->trueList;
+}
+
+void genCodeORExp(YYSTYPE* a, YYSTYPE* b, YYSTYPE* res, int markerAddress){
+	bp(a->falseList, markerAddress);
+	res->trueList = merge(a->trueList,b->trueList);
+	res->falseList = b->falseList;
+}
+
+void genCodeNOTExp(YYSTYPE* a, YYSTYPE* res){
+	res->trueList = a->falseList;
+	res->falseList = a->trueList;
+}
+
+void genCodeTrueExp(YYSTYPE* a){
+	a->trueList = makelist(next());
+	emit("goto ");
+}
+
+void genCodeFalseExp(YYSTYPE* a){
+	a->falseList = makelist(next());
+	emit("goto ");
+}
+
+void genCodeRelOpExp(YYSTYPE* a, string rel_op, YYSTYPE* b, YYSTYPE* res){
+	if(rel_op=="<=" || rel_op==">="){
+		res->trueList = makelist(next());
+		emit("if " + a->var + "==" + b->var + "goto ");
+		rel_op == "<=" ? rel_op = "<" : rel_op = ">";
+	}
+	res->trueList != null ? 
+		res->trueList = merge(res->trueList ,makelist(next())) : 
+		res->trueList = makelist(next());
+		
+	emit("if " + a->var + rel_op + b->var + "goto ");
+	
+	res->falseList = makelist(next());
+	emit("goto ");
+}
+
 
 string coerseType(string typeTo, string typeFrom, string var){
 	if(typeFrom==typeTo) return var;
