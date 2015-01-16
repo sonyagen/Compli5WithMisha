@@ -100,7 +100,7 @@
 
 Prog		:	{startScope();} Statements {endScopeWrapper("Close");} ;
 
-Statements	:	Statements Statement 
+Statements	:	Statements M Statement {$$.nextList = $3.nextList; bp($1.nextList,M.nextAddress);}
 			|	Statement
 			;
 
@@ -111,14 +111,16 @@ Statement	:	LC {startScope();} Statements {endScopeWrapper("Close");} RC {$$.typ
 			|	PRINT ID SC {ifVarNotDeclaredExit($2.name); ifNotNumExit(getVar($2)); $$.type="FakeClose"; genCodePrint($2);}
 			|	PRINT STRING SC {$$.type="FakeClose"; emit("print "+ $2.value);}
 			|	INPUT ID SC {ifVarNotDeclaredExit($2.name); ifNotNumExit(getVar($2)); $$.type="FakeClose"; genCodeInput($2);}
-			|	PrefixIF %prec A {$$.type="FakeClose"; ifNotBoolExit($1); }
-			|	PrefixIF ELSE {startScope();} Statement { endScopeWrapper($4.type); ifNotBoolExit($1); $$.type="FakeClose";}
-			|	WHILE LP Exp RP {startScope(); WhileLoopCount++;} Statement {ifNotBoolExit($3); endScopeWrapper($6.type); WhileLoopCount--; $$.type="FakeClose";}
+			|	PrefixIF %prec A {$$.type="FakeClose"; ifNotBoolExit($1); $$.nextList=$1.nextList;}
+			|	PrefixIF ELSE {startScope();} M Statement { endScopeWrapper($5.type); ifNotBoolExit($1); $$.type="FakeClose"; bp($1.nextList,$4.markerAddress);}
+			|	WHILE LP M Exp RP {startScope(); WhileLoopCount++;} M Statement 
+				{ifNotBoolExit($4); endScopeWrapper($8.type); WhileLoopCount--; $$.type="FakeClose";
+				genCodeWhile(&$$,$3.nextAddress,&$4,$7.nextAddress);}
 			|	BREAK SC {ifNotInWhileExit(); $$.type="FakeClose";}
 			|	SWITCH LP Exp RP LC { startScope(); } CasesList {} RC {ifNotCurrencyExit($3); endScopeWrapper("Close"); $$.type="FakeClose";}
 			;
 			
-PrefixIF 	: IF LP Exp RP { startScope();} Statement {$$.type=$3.type; endScopeWrapper($6.type); /*cout << $3.type << endl;*/} ;	
+PrefixIF 	: IF LP Exp RP { startScope();}  M Statement {$$.type=$3.type; endScopeWrapper($7.type); genCodeIfStat(&$$,&$3,$6.nextAddress);} ;	
 
 CasesList	:	CaseStat CasesList
 			|	CaseStat
@@ -155,6 +157,21 @@ Exp	:	LP Exp RP {$$.type = $2.type; $$.var = $2.var;}
 M	: {$$.nextAddress = next();} ;
 
 %%
+
+void genCodeWhile(YYSTYPE* res, int markerOfExp, YYSTYPE* exp, int markerOfStat){
+
+	bp(exp->trueList, markerOfStat);
+	res->nextList = exp->falseList;
+	
+	ostringstream os;
+	os << markerOfExp;
+	emit("goto " + os.str());
+}
+
+void genCodeIfStat(YYSTYPE* res ,YYSTYPE* exp, int markerAddress){
+	bp(exp->trueList, markerAddress);
+	res->nextList = exp->falseList;
+}
 
 void genCodeANDExp(YYSTYPE* a, YYSTYPE* b, YYSTYPE* res, int markerAddress){
 	bp(a->trueList, markerAddress);
@@ -256,6 +273,7 @@ string getCurrTemp(){
 }
 
 //////////////////////////////////////////////////////////////
+
 void yyerror(const char* c){
 	errorSyn(yylineno);
 	exit(1);
