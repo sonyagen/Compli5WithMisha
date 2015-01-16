@@ -75,6 +75,10 @@
 	void genCodeTrueExp(YYSTYPE* a);
 	void genCodeFalseExp(YYSTYPE* a);
 	void genCodeRelOpExp(YYSTYPE* a, string rel_op, YYSTYPE* b, YYSTYPE* res);
+	
+	//if while
+	void genCodeWhile(YYSTYPE* res, int markerOfExp, YYSTYPE* exp, int markerOfStat);
+	void genCodeIfStat(YYSTYPE* res ,YYSTYPE* exp, int markerAddress);
 
 
 %}
