@@ -1,7 +1,7 @@
 %{
     #include <stdio.h>
     #include "hw5.hpp"
-//    #include "output.hpp"
+    #include "output.hpp"
     #include "hw5.tab.hpp"
     #include <iostream>
     using namespace std;

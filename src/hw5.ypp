@@ -1,9 +1,10 @@
 %{
 	#include "bp.hpp"
-	#include "hw4.hpp"
+	#include "hw5.hpp"
 	#include "output.hpp"
 	#include <stdlib.h>
 	#include <iostream>
+	#include <sstream>
 	#include <string>
 	#include <map>
 	#include <stack>
@@ -58,6 +59,16 @@
 	void ifVarAlreadyDeclaredInScopeExit(string name);
 	int getStartOfScope();
 	int getEndOfScope();
+	
+
+	// code generation
+	void genCodeAssign(YYSTYPE id, string ExpType, string expVar);
+	void genCodePrint(YYSTYPE name);
+	void genCodeInput(YYSTYPE name);
+	string genCodeExp(YYSTYPE v1, string op, YYSTYPE v2);
+	string getCurrTemp();
+
+
 
 %}
 
@@ -88,11 +99,11 @@ Statements	:	Statements Statement
 
 Statement	:	LC {startScope();} Statements {endScopeWrapper("Close");} RC {$$.type="FakeClose";}
 			|	Type ID SC {addVarToScope($2.name, $1.type); $$.type="Close";}
-			| 	Type ID {addVarToScope($2.name, $1.type);} ASSIGN Exp SC {typesCompatible($1,$5); $$.type="Close"; genCodeAssign($2.name,$5.type, $5.var);}
-			|	ID ASSIGN Exp SC {ifVarNotDeclaredExit($1.name); typesCompatible(getVar($1), $3); $$.type="FakeClose"; genCodeAssign($1.name,$3.type,$3.var);}
-			|	PRINT ID SC {ifVarNotDeclaredExit($2.name); ifNotNumExit(getVar($2)); $$.type="FakeClose"; genCodePrint($2.name);}
+			| 	Type ID {addVarToScope($2.name, $1.type);} ASSIGN Exp SC {typesCompatible($1,$5); $$.type="Close"; genCodeAssign($2,$5.type, $5.var);}
+			|	ID ASSIGN Exp SC {ifVarNotDeclaredExit($1.name); typesCompatible(getVar($1), $3); $$.type="FakeClose"; genCodeAssign($1,$3.type,$3.var);}
+			|	PRINT ID SC {ifVarNotDeclaredExit($2.name); ifNotNumExit(getVar($2)); $$.type="FakeClose"; genCodePrint($2);}
 			|	PRINT STRING SC {$$.type="FakeClose"; emit("print "+ $2.value);}
-			|	INPUT ID SC {ifVarNotDeclaredExit($2.name); ifNotNumExit(getVar($2)); $$.type="FakeClose"; genCodeInput($2.name);}
+			|	INPUT ID SC {ifVarNotDeclaredExit($2.name); ifNotNumExit(getVar($2)); $$.type="FakeClose"; genCodeInput($2);}
 			|	PrefixIF %prec M {$$.type="FakeClose"; ifNotBoolExit($1); }
 			|	PrefixIF ELSE {startScope();} Statement { endScopeWrapper($4.type); ifNotBoolExit($1); $$.type="FakeClose";}
 			|	WHILE LP Exp RP {startScope(); WhileLoopCount++;} Statement {ifNotBoolExit($3); endScopeWrapper($6.type); WhileLoopCount--; $$.type="FakeClose";}
@@ -136,7 +147,7 @@ Exp	:	LP Exp RP {$$.type = $2.type; $$.var = $2.var;}
 
 %%
 
-string coerseType(string typeTo, string TypeFrom, String var){
+string coerseType(string typeTo, string typeFrom, string var){
 	if(typeFrom==typeTo) return var;
 	string newVar = newTemp();
 	if(typeFrom=="EURO") { emit(newVar + "=" + var + "* 70"); }
@@ -148,9 +159,9 @@ string coerseType(string typeTo, string TypeFrom, String var){
 	return newVar;
 }
 
-void genCodeAssign(string idName, string ExpType, string expVar){
-	expVar = coerseType(getVar(idName).type, ExpType, expVar);
-	emit(getVar(idName).var + "=" + expVar);
+void genCodeAssign(YYSTYPE id, string ExpType, string expVar){
+	expVar = coerseType(getVar(id).type, ExpType, expVar);
+	emit(getVar(id).var + "=" + expVar);
 }
 
 string genCodeExp(YYSTYPE v1, string op, YYSTYPE v2){
@@ -166,11 +177,11 @@ string genCodeExp(YYSTYPE v1, string op, YYSTYPE v2){
 	return newVar;
 }
 
-void genCodePrint(string name){
+void genCodePrint(YYSTYPE name){
 	emit("input " + getVar(name).var);
 }
 
-void genCodeInput(string name){
+void genCodeInput(YYSTYPE name){
 	emit("input " + getVar(name).var);
 }
 
@@ -181,7 +192,9 @@ string newTemp(){
 }
 
 string getCurrTemp(){
-	return "s[" + TempVarCounter + "]";
+	ostringstream os;
+	os << TempVarCounter;
+	return "s[" + os.str() + "]";
 }
 
 //////////////////////////////////////////////////////////////
@@ -310,7 +323,7 @@ void addVarToScope(string name, string type)
 	ezer.name = name;
 	ezer.type = type;
 	int target_offset;
-	tempVarName = newTemp();
+	string tempVarName = newTemp();
 
 	
 //	for(int i = 0; i < var_map.size(); i++)
