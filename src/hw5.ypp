@@ -196,7 +196,7 @@ void genCodeRelOpExp(YYSTYPE* a, string rel_op, YYSTYPE* b, YYSTYPE* res){
 //		res->trueList = merge(res->trueList ,makelist(next())) : 
 //		res->trueList = makelist(next());
 
-	res->trueList = merge(makelist(next()), alist)
+	res->trueList = merge(makelist(next()), alist);
 		
 	emit("if " + a->var + rel_op + b->var + "goto ");
 	
