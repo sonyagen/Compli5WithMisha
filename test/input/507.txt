@@ -6,17 +6,17 @@
 // E<-R  
 // E<-D 
 
-R x1 = 5D;
-R x2 = 4E;
-if(x1 == 300R) print "ok"; else print "fail_1";
-if(x2 == 300R) print "ok"; else print "fail_2";
+R x = 5D;
+R y = 4E;
+if(x == 300R) print "ok"; else print "fail_1";
+if(y == 300R) print "ok"; else print "fail_2";
 
-D x1 = 300R;
-D x2 = 4E;
-if(x1 == 5D) print "ok"; else print "fail_3";
-if(x2 == 5D) print "ok"; else print "fail_4";
+D z = 300R;
+D w = 4E;
+if(z == 5D) print "ok"; else print "fail_3";
+if(w== 5D) print "ok"; else print "fail_4";
 
-E x1 = 300R;
-E x2 = 5D;
-if(x1 == 4E) print "ok"; else print "fail_5";
-if(x2 == 4E) print "ok"; else print "fail_6";
+E a = 300R;
+E b = 5D;
+if(a == 4E) print "ok"; else print "fail_5";
+if(b == 4E) print "ok"; else print "fail_6";

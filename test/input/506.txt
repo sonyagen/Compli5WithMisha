@@ -2,17 +2,17 @@
 // int / int = int
 // currency / currency = int
 
-int i1 = 2;
-R r1 = 2R;
-D d1 = 2D;
-E e1 = 2E;
+int ia = 2;
+R ra = 2R;
+D da = 2D;
+E ea = 2E;
 
-int i2 = 6;
-R r2 = 6R;
-D d2 = 6D;
-E e2 = 6E;
+int ib = 6;
+R rb = 6R;
+D db = 6D;
+E eb = 6E;
 
-if(i2 / i1 == 3) print "ok"; else print "fail_1";
-if(r2 / r1 == 3) print "ok"; else print "fail_2";
-if(d2 / d1 == 3) print "ok"; else print "fail_3";
-if(e2 / e1 == 3) print "ok"; else print "fail_4";
+if(ib / ia == 3) print "ok"; else print "fail_1";
+if(rb / ra == 3) print "ok"; else print "fail_2";
+if(db / da == 3) print "ok"; else print "fail_3";
+if(eb / ea == 3) print "ok"; else print "fail_4";

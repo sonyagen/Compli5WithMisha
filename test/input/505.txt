@@ -3,16 +3,16 @@
 // currency * int = currency
 // int * currency = currency
 
-int i1 = 3;
-int i2 = 2;
-R r1 = 3R;
-D d1 = 3D;
-E e1 = 3E;
+int i = 3;
+int ii = 2;
+R r = 3R;
+D d = 3D;
+E e = 3E;
 
-if(i1*i2 == 6) print "ok"; else print "fail_1";
-if(r1*i2 == 6R) print "ok"; else print "fail_2";
-if(d1*i2 == 6D) print "ok"; else print "fail_3";
-if(e1*i2 == 6E) print "ok"; else print "fail_4";
-if(i2*r1 == 6R) print "ok"; else print "fail_2";
-if(i2*d1 == 6D) print "ok"; else print "fail_3";
-if(i2*e1 == 6E) print "ok"; else print "fail_4";
+if(i*ii == 6) print "ok"; else print "fail_1";
+if(r*ii == 6R) print "ok"; else print "fail_2";
+if(d*ii == 6D) print "ok"; else print "fail_3";
+if(e*ii == 6E) print "ok"; else print "fail_4";
+if(ii*r == 6R) print "ok"; else print "fail_2";
+if(ii*d == 6D) print "ok"; else print "fail_3";
+if(ii*e == 6E) print "ok"; else print "fail_4";
