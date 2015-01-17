@@ -1,5 +1,5 @@
 %{
-	#include "bp.hpp"
+	#include "mybp.hpp"
 	#include "hw5.hpp"
 	#include "output.hpp"
 	#include <stdlib.h>
@@ -110,7 +110,7 @@
 
 %%
 
-Prog		:	{startScope();} Statements {endScopeWrapper("Close");} ;
+Prog		:	{startScope();} Statements M {endScopeWrapper("Close");bp($2.nextList, $3.nextAddress);} ;
 
 Statements	:	Statements M Statement {$$.nextList = $3.nextList; bp($1.nextList,$2.nextAddress);}
 			|	Statement
@@ -126,8 +126,8 @@ Statement	:	LC {startScope();} Statements {endScopeWrapper("Close");} RC {$$.typ
 			|	PRINT STRING SC {$$.type="FakeClose"; emit("print "+ $2.value);}
 			|	INPUT ID SC {ifVarNotDeclaredExit($2.name); ifNotNumExit(getVar($2)); $$.type="FakeClose"; genCodeInput($2);}
 			|	PrefixIF %prec A {$$.type="FakeClose"; ifNotBoolExit($1); $$.nextList=$1.nextList;}
-			|	PrefixIF ELSE {startScope();} M Statement { endScopeWrapper($5.type); ifNotBoolExit($1); 
-				$$.type="FakeClose"; bp($1.nextList,$4.nextAddress);}
+			|	PrefixIF ELSE {startScope();} N M Statement { endScopeWrapper($6.type); ifNotBoolExit($1); 
+				$$.type="FakeClose"; bp($1.nextList,$5.nextAddress); $$.nextList=merge($1.nextList, makelist($4.nextAddress));}
 			|	WHILE LP M Exp RP {startScope(); WhileLoopCount++;} M Statement 
 				{ifNotBoolExit($4); endScopeWrapper($8.type); WhileLoopCount--; $$.type="FakeClose";
 				genCodeWhile(&$$,$3.nextAddress,&$4,$7.nextAddress);}
@@ -173,6 +173,8 @@ Exp	:	LP Exp RP {$$.type = $2.type; $$.var = $2.var;}
 ;
 
 M	: {$$.nextAddress = next();} ;
+
+N	: {$$.nextAddress = next(); emit("goto ");} ;
 
 %%
 void genCodeBreak(YYSTYPE *res){
@@ -238,7 +240,7 @@ void genCodeRelOpExp(YYSTYPE* a, string rel_op, YYSTYPE* b, YYSTYPE* res){
 	if(rel_op=="<=" || rel_op==">="){
 		//res->trueList = makelist(next());
 		alist = makelist(next());
-		emit("if " + a->var + "==" + b->var + "goto ");
+		emit("if " + a->var + "==" + b->var + " goto ");
 		rel_op == "<=" ? rel_op = "<" : rel_op = ">";
 	}
 	
@@ -248,7 +250,7 @@ void genCodeRelOpExp(YYSTYPE* a, string rel_op, YYSTYPE* b, YYSTYPE* res){
 
 	res->trueList = merge(makelist(next()), alist);
 		
-	emit("if " + a->var + rel_op + b->var + "goto ");
+	emit("if " + a->var + rel_op + b->var + " goto ");
 	
 	res->falseList = makelist(next());
 	emit("goto ");
@@ -258,11 +260,11 @@ void genCodeRelOpExp(YYSTYPE* a, string rel_op, YYSTYPE* b, YYSTYPE* res){
 string coerseType(string typeTo, string typeFrom, string var){
 	if(typeFrom==typeTo) return var;
 	string newVar = newTemp();
-	if(typeFrom=="EURO") { emit(newVar + "=" + var + "* 70"); }
-	else if (typeFrom=="DOLLAR") { emit(newVar + "=" + var + "* 65"); }
+	if(typeFrom=="EURO") { emit(newVar + "=" + var + "*70"); }
+	else if (typeFrom=="DOLLAR") { emit(newVar + "=" + var + "*65"); }
 	
-	if(typeTo=="EURO") { emit(newVar + "=" + newVar + "/ 70"); }
-	else if (typeTo=="DOLLAR") { emit(newVar + "=" + newVar + "/ 65"); }
+	if(typeTo=="EURO") { emit(newVar + "=" + newVar + "/70"); }
+	else if (typeTo=="DOLLAR") { emit(newVar + "=" + newVar + "/65"); }
 	
 	return newVar;
 }

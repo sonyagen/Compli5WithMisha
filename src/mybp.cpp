@@ -1,4 +1,4 @@
-#include "bp.hpp"
+﻿#include "mybp.hpp"
 #include <vector>
 #include <iostream>
 #include <sstream>
@@ -17,8 +17,9 @@ void emit(string s){
 void bp(list<int>& l, int address){
     ostringstream os;
     os << address;
-    for(list<int>::iterator i = l.begin(); i != l.end(); i++){
+    for(list<int>::iterator i = l.begin(); i != l.end(); ){
 	buffer[*i] += os.str();
+	i = l.erase(i);
     }
 }
 
@@ -43,3 +44,7 @@ list<int> merge(list<int> l1,list<int> l2)
 	return newList;
 }
 
+/*list<int> printlist(list<int> l)
+{
+  
+}*/
