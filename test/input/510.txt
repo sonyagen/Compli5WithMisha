@@ -1,0 +1,12 @@
+//coercion in -/-
+// random 
+
+if(600R == 10D) print "ok"; else print "fail_1";
+if(9D < 600R) print "ok"; else print "fail_2";
+if(8E == 10D) print "ok"; else print "fail_3";
+if(8E < 11D) print "ok"; else print "fail_4";
+if(8D != 9E) print "ok"; else print "fail_5";
+
+//this is the most important test - the other check same thing
+//this makes sure no information is lost in the conversion
+if(8E < 602D) print "ok"; else print "fail_6";

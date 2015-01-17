@@ -1,0 +1,4 @@
+if (2>=1) print "ok"; else print "fail";
+if (2>=2) print "ok"; else print "fail";
+if (2<=3) print "ok"; else print "fail";
+if (2<=2) print "ok"; else print "fail";
