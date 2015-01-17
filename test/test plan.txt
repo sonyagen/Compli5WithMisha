@@ -1,22 +1,29 @@
-test plan
-basic
--------
+--test plan--
+
+-----------basic:---------------
+--------------------------------
+
+--input / print--
 input for int,dollar,euro,ruble
-print
-each arithmetical operation
+print int string
 
-cersion
-coersion in each matematical oreration 
-coersion in assignment * 2
+--arithmetical operation--
++ - * /
 
-construct boolean expression
+--coercion:--
+coercion in assignment
+coercion in each mathematical operation 
+coercion in relop
 
-atomic:
+--construct boolean expression--
+--------------------------------
+
+--atomic:--
 if true print x
 if false print x
 if x<y y>x x==x x!=y x<=x x<=y y>=x y>=y
 
-complex:
+--complex:--
 if false and true
 if true and false
 if true or false

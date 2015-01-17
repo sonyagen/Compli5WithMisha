@@ -1,16 +1,23 @@
+//input / print
+//input int and currency types
+//print str
+//print int and currency types
+
 int i;
 R r;
 D d;
 E e;
 
 input i;
-print i;
 input r;
-print r;
 input d;
-print d;
 input e;
+
+print i;
+print r;
+print d;
 print e;
 
+print " welcome to test!";
 
 
