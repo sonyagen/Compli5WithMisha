@@ -8,8 +8,8 @@ R r2 = 2R;
 D d2 = 2D;
 E e2 = 2E;
 
-if(i1 + i2 == 3) print "ok" else print "fail_1";
-if(r1 + r2 == 3R) print "ok" else print "fail_2";
-if(d1 + d2 == 3D) print "ok" else print "fail_3";
-if(e1 + e2 == 3E) print "ok" else print "fail_4";
+if(i1 + i2 == 3) print "ok"; else print "fail_1";
+if(r1 + r2 == 3R) print "ok"; else print "fail_2";
+if(d1 + d2 == 3D) print "ok"; else print "fail_3";
+if(e1 + e2 == 3E) print "ok"; else print "fail_4";
 

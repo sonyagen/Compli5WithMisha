@@ -8,15 +8,15 @@
 
 R x1 = 5D;
 R x2 = 4E;
-if(x1 == 300R) print "ok" else print "fail_1";
-if(x2 == 300R) print "ok" else print "fail_2";
+if(x1 == 300R) print "ok"; else print "fail_1";
+if(x2 == 300R) print "ok"; else print "fail_2";
 
 D x1 = 300R;
 D x2 = 4E;
-if(x1 == 5D) print "ok" else print "fail_3";
-if(x2 == 5D) print "ok" else print "fail_4";
+if(x1 == 5D) print "ok"; else print "fail_3";
+if(x2 == 5D) print "ok"; else print "fail_4";
 
 E x1 = 300R;
 E x2 = 5D;
-if(x1 == 4E) print "ok" else print "fail_5";
-if(x2 == 4E) print "ok" else print "fail_6";
+if(x1 == 4E) print "ok"; else print "fail_5";
+if(x2 == 4E) print "ok"; else print "fail_6";

@@ -1,11 +1,11 @@
 //coercion in -/-
 
-if(600R/5D == 2) print "ok" else print "fail_1";
-if(600R/4E == 2) print "ok" else print "fail_2";
+if(600R/5D == 2) print "ok"; else print "fail_1";
+if(600R/4E == 2) print "ok"; else print "fail_2";
 
-if(2D/300R == 2) print "ok" else print "fail_3";
-if(2D/4E == 2) print "ok" else print "fail_4";
+if(2D/300R == 2) print "ok"; else print "fail_3";
+if(2D/4E == 2) print "ok"; else print "fail_4";
 
-if(2E/300R == 2) print "ok" else print "fail_5";
-if(2E/5D == 2) print "ok" else print "fail_6";
+if(2E/300R == 2) print "ok"; else print "fail_5";
+if(2E/5D == 2) print "ok"; else print "fail_6";
 
