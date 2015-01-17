@@ -1,0 +1,22 @@
+//coercion in +/-
+// R+/-D  
+// R+/-E 
+// D+/-R  
+// D+/-E 
+// E+/-R  
+// E+/-D 
+
+if(1R+5D == 301R) print "ok" else print "fail_1";
+if(1R+4E == 301R) print "ok" else print "fail_2";
+if(1R-5D == -299R) print "ok" else print "fail_1";
+if(1R-4E == -299R) print "ok" else print "fail_2";
+
+if(1D+300R == 6D) print "ok" else print "fail_3";
+if(1D+4E == 6D) print "ok" else print "fail_4";
+if(1D-300R == -4D) print "ok" else print "fail_3";
+if(1D-4E == -4D) print "ok" else print "fail_4";
+
+if(1E+300R == 5E) print "ok" else print "fail_5";
+if(1E+5D == 5E) print "ok" else print "fail_6";
+if(1E-300R == -3E) print "ok" else print "fail_5";
+if(1E-5D == -3E) print "ok" else print "fail_6";

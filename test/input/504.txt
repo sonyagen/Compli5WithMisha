@@ -1,0 +1,14 @@
+int i1 = 1;
+R r1 = 1R;
+D d1 = 1D;
+E e1 = 1E;
+
+int i2 = 2;
+R r2 = 2R;
+D d2 = 2D;
+E e2 = 2E;
+
+if(i1 - i2 == -1) print "ok" else print "fail_1";
+if(r1 - r2 == -1R) print "ok" else print "fail_2";
+if(d1 - d2 == -1D) print "ok" else print "fail_3";
+if(e1 - e2 == -1E) print "ok" else print "fail_4";

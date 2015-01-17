@@ -1,0 +1,36 @@
+test plan
+basic
+-------
+input for int,dollar,euro,ruble
+print
+each arithmetical operation
+
+cersion
+coersion in each matematical oreration 
+coersion in assignment * 2
+
+construct boolean expression
+
+atomic:
+if true print x
+if false print x
+if x<y y>x x==x x!=y x<=x x<=y y>=x y>=y
+
+complex:
+if false and true
+if true and false
+if true or false
+if false or true
+if not complex cond
+
+--same test for expresion & for varaibe - and build the varable with steps---
+
+getting next instruction
+
+if
+if else
+while
+
+2 level while
+
+break semantic
