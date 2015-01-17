@@ -1,15 +1,15 @@
-int i1 = 1;
-R r1 = 1R;
-D d1 = 1D;
-E e1 = 1E;
+int ia = 1;
+R ra = 1R;
+D da = 1D;
+E ea = 1E;
 
-int i2 = 2;
-R r2 = 2R;
-D d2 = 2D;
-E e2 = 2E;
+int ib = 2;
+R rb = 2R;
+D db = 2D;
+E eb = 2E;
 
-if(i1 + i2 == 3) print "ok"; else print "fail_1";
-if(r1 + r2 == 3R) print "ok"; else print "fail_2";
-if(d1 + d2 == 3D) print "ok"; else print "fail_3";
-if(e1 + e2 == 3E) print "ok"; else print "fail_4";
+if(ia + ib == 3) print "ok"; else print "fail_1";
+if(ra + rb == 3R) print "ok"; else print "fail_2";
+if(da + db == 3D) print "ok"; else print "fail_3";
+if(ea + eb == 3E) print "ok"; else print "fail_4";
 
