@@ -1,0 +1,10 @@
+int i1;
+R r1;
+D d1;
+E e1;
+
+int i2;
+R r2;
+D d2;
+E e2;
+

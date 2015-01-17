@@ -1,0 +1,16 @@
+int i;
+R r;
+D d;
+E e;
+
+input i;
+print i;
+input r;
+print r;
+input d;
+print d;
+input e;
+print e;
+
+
+

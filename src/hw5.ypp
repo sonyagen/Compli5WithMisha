@@ -40,8 +40,8 @@
 	void logOpCompatible(YYSTYPE left, YYSTYPE right);
 	bool isCurrency(YYSTYPE variable);
 	bool isCurrency(var variable);
-	&var getVar(YYSTYPE var);
-	&var getVar(var varname);
+	var& getVar(YYSTYPE var);
+	var& getVar(var varname);
 	void ifNotBoolExit(YYSTYPE variable);
 	string getMultTypeOrExit(YYSTYPE left, YYSTYPE right);
 	string getDivTypeOrExit(YYSTYPE left, YYSTYPE right);
@@ -129,7 +129,7 @@ Statement	:	LC {startScope();} Statements {endScopeWrapper("Close");} RC {$$.typ
 			|	WHILE LP M Exp RP {startScope(); WhileLoopCount++;} M Statement 
 				{ifNotBoolExit($4); endScopeWrapper($8.type); WhileLoopCount--; $$.type="FakeClose";
 				genCodeWhile(&$$,$3.nextAddress,&$4,$7.nextAddress);}
-			|	BREAK SC {ifNotInWhileExit(); $$.type="FakeClose";}
+			|	BREAK SC {ifNotInWhileExit(); $$.type="FakeClose"; genCodeBreak(&$$)}
 			|	SWITCH LP Exp RP LC { startScope(); } CasesList {} RC {ifNotCurrencyExit($3); 
 				endScopeWrapper("Close"); $$.type="FakeClose";}
 			;
@@ -173,6 +173,10 @@ Exp	:	LP Exp RP {$$.type = $2.type; $$.var = $2.var;}
 M	: {$$.nextAddress = next();} ;
 
 %%
+void genCodeBreak(YYSTYPE *res){
+	res->nextList = makelist(next());
+	emit("goto ");
+}
 
 void setListsFromId(YYSTYPE *res,YYSTYPE id){
 	res->trueList = getVar(id).trueList; 
@@ -180,7 +184,7 @@ void setListsFromId(YYSTYPE *res,YYSTYPE id){
 }
 
 void setListsToId(YYSTYPE id, YYSTYPE* exp){
-	&var v = geVar(id);
+	var& v = getVar(id);
 	v.trueList = exp->trueList;
 	v.falseList = exp->falseList;
 }
@@ -462,7 +466,7 @@ void ifVarNotDeclaredExit(string name)
 	exit(1);
 }
 
-&var getVar(YYSTYPE variable)
+var& getVar(YYSTYPE variable)
 {
 	ifVarNotDeclaredExit(variable.name);
 	for(int i = var_map.size()-1; i>=0 ;i--)
