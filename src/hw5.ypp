@@ -86,6 +86,8 @@
 	void setListsToId(YYSTYPE id, YYSTYPE* exp);
 	void setListsFromId(YYSTYPE *res, YYSTYPE id);
 
+	void genCodeBreak(YYSTYPE *res);
+
 
 %}
 
@@ -129,7 +131,7 @@ Statement	:	LC {startScope();} Statements {endScopeWrapper("Close");} RC {$$.typ
 			|	WHILE LP M Exp RP {startScope(); WhileLoopCount++;} M Statement 
 				{ifNotBoolExit($4); endScopeWrapper($8.type); WhileLoopCount--; $$.type="FakeClose";
 				genCodeWhile(&$$,$3.nextAddress,&$4,$7.nextAddress);}
-			|	BREAK SC {ifNotInWhileExit(); $$.type="FakeClose"; genCodeBreak(&$$)}
+			|	BREAK SC {ifNotInWhileExit(); $$.type="FakeClose"; genCodeBreak(&$$);}
 			|	SWITCH LP Exp RP LC { startScope(); } CasesList {} RC {ifNotCurrencyExit($3); 
 				endScopeWrapper("Close"); $$.type="FakeClose";}
 			;
