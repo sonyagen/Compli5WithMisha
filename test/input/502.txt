@@ -1,6 +1,6 @@
 //if else stats - needed to create other testing
 if (true) print "ok" else print "fail";
-if (fales) print "fail" else print "ok";
+if (false) print "fail" else print "ok";
 if (2==2) print "ok" else print "fail";
 if (1!=2) print "ok" else print "fail";
 if (1<2) print "ok" else print "fail";

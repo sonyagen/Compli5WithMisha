@@ -18,6 +18,6 @@ print r;
 print d;
 print e;
 
-print " welcome to test!";
+print "welcome to test!";
 
 
