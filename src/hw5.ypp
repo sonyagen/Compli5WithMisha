@@ -523,4 +523,5 @@ int main()
         yydebug = 1;
     #endif
     yyparse();
+	printBuffer();
 }
