@@ -24,13 +24,13 @@
 		string type;
 		int offset;
 		string var;
-		list<int> trueList;
-		list<int> falseList;
 	} var;
 
 	stack<int> scopes;
 	map<int,var> var_map;
 	
+	stack<YYSTYPE> switchExpStack; 	//the value on the top of stack is the result of innermost switch expression evaluation
+									// on every nested switch level the new variable is pushed to it
 	int TempVarCounter = 0;
 
 	//validation func
@@ -64,7 +64,7 @@
 	
 
 	// code generation
-	void genCodeAssign(YYSTYPE id, string ExpType, string expVar);
+	void genCodeAssign(YYSTYPE* res, YYSTYPE id, YYSTYPE* Exp, string expVar);
 	void genCodePrint(YYSTYPE name);
 	void genCodeInput(YYSTYPE name);
 	string genCodeExp(YYSTYPE v1, string op, YYSTYPE v2);
@@ -82,13 +82,11 @@
 	void genCodeWhile(YYSTYPE* res, int markerOfExp, YYSTYPE* exp, int markerOfStat);
 	void genCodeIfStat(YYSTYPE* res ,YYSTYPE* exp, int markerAddress);
 	
-	//when assign to a bool var
-	void setListsToId(YYSTYPE id, YYSTYPE* exp);
-	void setListsFromId(YYSTYPE *res, YYSTYPE id);
 
 	void genCodeBreak(YYSTYPE *res);
 	string coerseType(string typeTo, string typeFrom, string var);
 
+	void genCodeCaseStat(YYSTEPE num, YYSTYPE type, int blockStartAddr);
 
 %}
 
@@ -111,18 +109,18 @@
 
 %%
 
-Prog		:	{startScope();} Statements M {endScopeWrapper("Close");bp($2.nextList, $3.nextAddress);} ;
+Prog		:	{startScope();} Statements M {endScopeWrapper("Close"); bp($2.nextList, $3.nextAddress);} ;
 
 Statements	:	Statements M Statement {$$.nextList = $3.nextList; bp($1.nextList,$2.nextAddress);}
-			|	Statement
+			|	Statement {$$.nextList = $1.nextList;}
 			;
 
 Statement	:	LC {startScope();} Statements {endScopeWrapper("Close");} RC {$$.type="FakeClose";}
 			|	Type ID SC {addVarToScope($2.name, $1.type); $$.type="Close";}
 			| 	Type ID {addVarToScope($2.name, $1.type);} ASSIGN Exp SC {typesCompatible($1,$5); 
-				$$.type="Close"; genCodeAssign($2, $5.type, $5.var); setListsToId($2, &$5);}
+				$$.type="Close"; genCodeAssign(&$$, $2, &$5, $5.var); }
 			|	ID ASSIGN Exp SC {ifVarNotDeclaredExit($1.name); typesCompatible(getVar($1), $3); 
-				$$.type="FakeClose"; genCodeAssign($1, $3.type, $3.var); setListsToId($1, &$3);}
+				$$.type="FakeClose"; genCodeAssign(&$$, $1, &$3, $3.var); }
 			|	PRINT ID SC {ifVarNotDeclaredExit($2.name); ifNotNumExit(getVar($2)); $$.type="FakeClose"; genCodePrint($2);}
 			|	PRINT STRING SC {$$.type="FakeClose"; emit("print "+ $2.value);}
 			|	INPUT ID SC {ifVarNotDeclaredExit($2.name); ifNotNumExit(getVar($2)); $$.type="FakeClose"; genCodeInput($2);}
@@ -131,21 +129,24 @@ Statement	:	LC {startScope();} Statements {endScopeWrapper("Close");} RC {$$.typ
 				$$.type="FakeClose"; bp($1.nextList,$5.nextAddress); $$.nextList=merge($1.nextList, makelist($4.nextAddress));}
 			|	WHILE LP M Exp RP {startScope(); WhileLoopCount++;} M Statement 
 				{ifNotBoolExit($4); endScopeWrapper($8.type); WhileLoopCount--; $$.type="FakeClose";
-				genCodeWhile(&$$,$3.nextAddress,&$4,$7.nextAddress);}
+				genCodeWhile(&$$,$3.nextAddress,&$4,$7.nextAddress); $$.nextList = merge($$.nextList,$8.falseList);}
 			|	BREAK SC {ifNotInWhileExit(); $$.type="FakeClose"; genCodeBreak(&$$);}
-			|	SWITCH LP Exp RP LC { startScope(); } CasesList {} RC {ifNotCurrencyExit($3); 
-				endScopeWrapper("Close"); $$.type="FakeClose";}
+			|	SWITCH LP Exp RP LC { startScope(); switchExpStack.push($3);} CasesList {} RC {ifNotCurrencyExit($3); 
+				endScopeWrapper("Close"); $$.type="FakeClose"; switchExpStack.pop(); $$.nextList = $7.nextList}
 			;
 			
 PrefixIF 	: IF LP Exp RP { startScope();}  M Statement {$$.type=$3.type; endScopeWrapper($7.type); 
 				genCodeIfStat(&$$,&$3,$6.nextAddress);} ;	
 
-CasesList	:	CaseStat CasesList
-			|	CaseStat
+CasesList	:	CaseStat CasesList {$$.nextList=merge($1.nextList,$2.nextList);}
+			|	CaseStat {$$.nextList=$1.nextList;}
 			;
 			
-CaseStat	:	CASE NUM CurrencyType COL {startScope();} Statement {endScopeWrapper($6.type);} BREAK SC ;
-
+CaseStat	:	CASE NUM CurrencyType COL {startScope(); $$.trueList = makelist(next()); emit("goto ");} 
+				M Statement {$$.nextList = merge($$.nextList,makelist(next())); emit("goto ");} M {endScopeWrapper($7.type); 
+				genCodeCaseStat($2,$3,$6.nextAddress);} 
+				BREAK SC {bp($$.trueList, $9.nextAddress);};
+				
 CurrencyType	:	RUBLE {$$.type = "RUBLE";}
 				|	EURO {$$.type = "EURO";}
 				|	DOLLAR {$$.type = "DOLLAR";}
@@ -162,7 +163,7 @@ Exp	:	LP Exp RP {$$.type = $2.type; $$.var = $2.var;}
 	|	Exp MULT Exp {$$.type = getMultTypeOrExit($1,$3); $$.var = genCodeExp($1,"*",$3);}
 	|	Exp DIV Exp {$$.type = getDivTypeOrExit($1,$3); $$.var = genCodeExp($1,"/",$3);}
 	|	ID {ifVarNotDeclaredExit($1.name); $$.type = getVar($1).type; 
-			$$.var = getVar($1).var; setListsFromId(&$$,$1);}
+			$$.var = getVar($1).var;}
 	|	NUM {$$.type="INT"; $$.var = newTemp(); ostringstream os; os << $1.value; emit($$.var + "=" + os.str());}
 	|	NUM CurrencyType {$$.type=$2.type; $$.var = newTemp(); ostringstream os; os << $1.value; emit($$.var + "=" + os.str());}
 	|	TRUE {$$.type="BOOL"; genCodeTrueExp(&$$); }
@@ -178,20 +179,22 @@ M	: {$$.nextAddress = next();} ;
 N	: {$$.nextAddress = next(); emit("goto ");} ;
 
 %%
+
+void genCodeCaseStat(YYSTEPE num, YYSTYPE type, int blockStartAddr){
+	
+	YYSTYPE exp = switchExpStack.top();
+	string var = newTemp();
+	emit(var + "=" + num.value);
+	var = coerseType(exp->type, type, var);
+	
+	ostringstream os;
+	os << blockStartAddr;
+	emit("if " + exp.var + "==" var + "goto " + os.str());
+}
+
 void genCodeBreak(YYSTYPE *res){
-	res->nextList = makelist(next());
+	res->falseList = merge(res->falseList,makelist(next()));
 	emit("goto ");
-}
-
-void setListsFromId(YYSTYPE *res,YYSTYPE id){
-	res->trueList = getVar(id).trueList; 
-	res->falseList = getVar(id).falseList;
-}
-
-void setListsToId(YYSTYPE id, YYSTYPE* exp){
-	var& v = getVar(id);
-	v.trueList = exp->trueList;
-	v.falseList = exp->falseList;
 }
 
 void genCodeWhile(YYSTYPE* res, int markerOfExp, YYSTYPE* exp, int markerOfStat){
@@ -241,19 +244,23 @@ void genCodeRelOpExp(YYSTYPE* a, string rel_op, YYSTYPE* b, YYSTYPE* res){
 	string var2=coerseType("RUBLE", b->type, b->var);
 	list<int> alist;
 	if(rel_op=="<=" || rel_op==">="){
-		//res->trueList = makelist(next());
 		alist = makelist(next());
 		emit("if " + var1 + "==" + var2 + " goto ");
 		rel_op == "<=" ? rel_op = "<" : rel_op = ">";
 	}
-	
-//	res->trueList != NULL) ? 
-//		res->trueList = merge(res->trueList ,makelist(next())) : 
-//		res->trueList = makelist(next());
 
 	res->trueList = merge(makelist(next()), alist);
 		
 	emit("if " + var1 + rel_op + var2 + " goto ");
+	
+	res->falseList = makelist(next());
+	emit("goto ");
+}
+
+void genCodeBoolVariableExp(YYSTYPE id, YYSTYPE* res){
+	
+	res->trueList = makelist(next());
+	emit("if " + getVar(id).var + "==1" + " goto ");
 	
 	res->falseList = makelist(next());
 	emit("goto ");
@@ -273,9 +280,28 @@ string coerseType(string typeTo, string typeFrom, string var){
 	return newVar;
 }
 
-void genCodeAssign(YYSTYPE id, string ExpType, string expVar){
-	expVar = coerseType(getVar(id).type, ExpType, expVar);
-	emit(getVar(id).var + "=" + expVar);
+void genCodeAssign(YYSTYPE* res ,YYSTYPE id, YYSTYPE* exp, string expVar){
+	if(exp->type=="BOOL"){
+	
+		string newVar = newTemp();
+		
+		string trueLine = next();
+		emit(newVar + "=1");
+		
+		res->nextList = merge(res->nextList , makeList(next()));
+		emit("goto ");
+		
+		string falseLine = next();
+		emit(newVar + "=0");
+		
+		bp(exp->trueList,trueLine);
+		bp(exp->falseList,falseLine);
+	
+	}
+	else{
+		expVar = coerseType(getVar(id).type, exp->type, expVar);
+		emit(getVar(id).var + "=" + expVar);
+	}
 }
 
 string genCodeExp(YYSTYPE v1, string op, YYSTYPE v2){
