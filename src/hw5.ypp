@@ -87,6 +87,7 @@
 	void setListsFromId(YYSTYPE *res, YYSTYPE id);
 
 	void genCodeBreak(YYSTYPE *res);
+	string coerseType(string typeTo, string typeFrom, string var);
 
 
 %}
@@ -163,7 +164,7 @@ Exp	:	LP Exp RP {$$.type = $2.type; $$.var = $2.var;}
 	|	ID {ifVarNotDeclaredExit($1.name); $$.type = getVar($1).type; 
 			$$.var = getVar($1).var; setListsFromId(&$$,$1);}
 	|	NUM {$$.type="INT"; $$.var = newTemp(); ostringstream os; os << $1.value; emit($$.var + "=" + os.str());}
-	|	NUM CurrencyType {$$.type=$2.type; $$.var = $1.value;}
+	|	NUM CurrencyType {$$.type=$2.type; $$.var = newTemp(); ostringstream os; os << $1.value; emit($$.var + "=" + os.str());}
 	|	TRUE {$$.type="BOOL"; genCodeTrueExp(&$$); }
 	|	FALSE {$$.type="BOOL"; genCodeFalseExp(&$$);}
 	|	NOT Exp {ifNotBoolExit($2); $$.type="BOOL"; genCodeNOTExp(&$2,&$$);}
@@ -236,11 +237,13 @@ void genCodeFalseExp(YYSTYPE* a){
 }
 
 void genCodeRelOpExp(YYSTYPE* a, string rel_op, YYSTYPE* b, YYSTYPE* res){
+	string var1=coerseType("RUBLE", a->type, a->var);
+	string var2=coerseType("RUBLE", b->type, b->var);
 	list<int> alist;
 	if(rel_op=="<=" || rel_op==">="){
 		//res->trueList = makelist(next());
 		alist = makelist(next());
-		emit("if " + a->var + "==" + b->var + " goto ");
+		emit("if " + var1 + "==" + var2 + " goto ");
 		rel_op == "<=" ? rel_op = "<" : rel_op = ">";
 	}
 	
@@ -250,7 +253,7 @@ void genCodeRelOpExp(YYSTYPE* a, string rel_op, YYSTYPE* b, YYSTYPE* res){
 
 	res->trueList = merge(makelist(next()), alist);
 		
-	emit("if " + a->var + rel_op + b->var + " goto ");
+	emit("if " + var1 + rel_op + var2 + " goto ");
 	
 	res->falseList = makelist(next());
 	emit("goto ");
@@ -258,13 +261,14 @@ void genCodeRelOpExp(YYSTYPE* a, string rel_op, YYSTYPE* b, YYSTYPE* res){
 
 
 string coerseType(string typeTo, string typeFrom, string var){
-	if(typeFrom==typeTo) return var;
+	if(typeFrom==typeTo||typeFrom=="INT"||typeTo=="INT") return var;
 	string newVar = newTemp();
-	if(typeFrom=="EURO") { emit(newVar + "=" + var + "*70"); }
-	else if (typeFrom=="DOLLAR") { emit(newVar + "=" + var + "*65"); }
-	
-	if(typeTo=="EURO") { emit(newVar + "=" + newVar + "/70"); }
-	else if (typeTo=="DOLLAR") { emit(newVar + "=" + newVar + "/65"); }
+	if(typeFrom=="EURO") { emit(newVar + "=" + var + "*75"); }
+	else if (typeFrom=="DOLLAR") { emit(newVar + "=" + var + "*60"); }
+	else if (typeFrom=="RUBLE") { emit(newVar + "=" + var); }
+
+	if(typeTo=="EURO") { emit(newVar + "=" + newVar + "/75"); }
+	else if (typeTo=="DOLLAR") { emit(newVar + "=" + newVar + "/60"); }
 	
 	return newVar;
 }

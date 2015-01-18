@@ -1,7 +1,7 @@
-if (true and false) print "fail" else print "ok";
-if (false and true) print "fail" else print "ok";
+if (true and false) print "fail"; else print "ok";
+if (false and true) print "fail"; else print "ok";
 
-if (true or false) print "ok" else print "fail";
-if (false or true) print "ok" else print "fail";
+if (true or false) print "ok"; else print "fail";
+if (false or true) print "ok"; else print "fail";
 
-if (false or true) print "ok" else print "fail";
+if (false or true) print "ok"; else print "fail";

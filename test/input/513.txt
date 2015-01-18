@@ -4,18 +4,19 @@ if(2<3 and (4<3 or 6!=7))
 	x=1;
 }
 
-if (x==1) print "ok" else print "fail if";
+if (x==1) print "ok"; else print "fail if";
 
 x = 0;
-if(!(2<3 and (4<3 or 6!=7)))
+if(not(2<3 and (4<3 or 6!=7)))
 {
 	x=0;
 }	else {
 	x=1;
 }
 
-if (x==1) print "ok" else print "fail if-else";
+if (x==1) print "ok"; else print "fail if-else";
 
 x=10;
 
-while(x!=0)
+while(x!=0) { x=x-5; print "iteration"; print x;}
+print "exited while";

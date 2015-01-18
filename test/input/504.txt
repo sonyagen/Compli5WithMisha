@@ -8,7 +8,7 @@ R rb = 2R;
 D db = 2D;
 E eb = 2E;
 
-if(ia - ib == -1) print "ok"; else print "fail_1";
-if(ra - rb == -1R) print "ok"; else print "fail_2";
-if(da - db == -1D) print "ok"; else print "fail_3";
-if(ea - eb == -1E) print "ok"; else print "fail_4";
+if(ia - ib == 0-1) print "ok"; else print "fail_1";
+if(ra - rb == 0R-1R) print "ok"; else print "fail_2";
+if(da - db == 0D-1D) print "ok"; else print "fail_3";
+if(ea - eb == 0E-1E) print "ok"; else print "fail_4";

@@ -1,0 +1,1 @@
+// TODO bool variable + if for it

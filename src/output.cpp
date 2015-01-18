@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include "output.hpp"
 using namespace std;
 
@@ -11,11 +11,11 @@ void output::printVar(const char* id, int offset, const char* type  ){
 }
 
 void output::errorLex(int lineno){
-//    cout << "line " << lineno << ":" << " lexical error" << endl;
+    cout << "line " << lineno << ":" << " lexical error" << endl;
 }
 
 void output::errorSyn(int lineno){
-//    cout << "line " << lineno << ":" << " syntax error" << endl;
+    cout << "line " << lineno << ":" << " syntax error" << endl;
 }
 
 void output::errorUndef(int lineno, const char* id){
