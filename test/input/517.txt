@@ -1,1 +1,6 @@
-// a simple test for break
+// boolean assignment
+bool b;
+bool a=false or ((false and true) or true);
+b=a;
+if(b) print "OK";
+else print "FAIL";

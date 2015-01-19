@@ -11,23 +11,27 @@ while(counter>0)
 if(counter==5) print "OK";
 
 // TODO while inside a while + break
-print "we will print out a trapeze on it's side";
 counter=10;
 int y;
+int control=9;
 while(counter>0)
 {
     y=counter;
     while(y>0) {
-	print "*";
 	y=y-1;
-	if(y==8) {
+	if(y<=8) {
+	    control=0;
 	    break;
+	    control=1;
 	    if(y<8) print "FAIL";
 	    y=16;
 	}
+	if(control==1) print "failed break";
+    }
 	if(y==8) print "OK for iteration ";
 	if(y==16) print "FAIL";
 	print y;
-    }
+    control=2;
+    counter=counter-1;
 }
-
+print control;

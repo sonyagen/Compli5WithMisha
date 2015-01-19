@@ -19,17 +19,17 @@ void output::errorSyn(int lineno){
 }
 
 void output::errorUndef(int lineno, const char* id){
-//    cout << "line " << lineno << ":" << " variable " << id << " is not defined" << endl;
+    cout << "line " << lineno << ":" << " variable " << id << " is not defined" << endl;
 }
 
 void output::errorDef(int lineno, const char* id){
-//    cout << "line " << lineno << ":" << " variable " << id << " is already defined" << endl;
+    cout << "line " << lineno << ":" << " variable " << id << " is already defined" << endl;
 }
 
 void output::errorMismatch(int lineno){
-//    cout << "line " << lineno << ":" << " type mismatch" << endl;
+    cout << "line " << lineno << ":" << " type mismatch" << endl;
 }
-	
+
 void output::errorUnexpectedBreak(int lineno) {
-//	cout << "line " << lineno << ":" << " unexpected break statement" << endl;	
+	cout << "line " << lineno << ":" << " unexpected break statement" << endl;	
 }

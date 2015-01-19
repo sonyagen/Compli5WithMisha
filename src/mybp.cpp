@@ -44,10 +44,10 @@ list<int> merge(list<int> l1,list<int> l2)
 	return newList;
 }
 
-void printlist(list<int> l)
+void printlist(string msg, list<int> l)
 {
 ostringstream os;
-cout << "DEBUG: list is: ";
+cout << "DEBUG: " + msg + " list is: ";
 for(list<int>::iterator i = l.begin(); i!=l.end(); i++){  
 	os << *i << " ";
 	cout << os.str();

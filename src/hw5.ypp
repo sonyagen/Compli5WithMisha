@@ -89,6 +89,7 @@
 	void genCodeCaseStat(YYSTYPE num, YYSTYPE type, int blockStartAddr);
 	
 	void genCodeBoolVariableExp(YYSTYPE id, YYSTYPE* res);
+	void SonyaWantsToSleep(YYSTYPE *res);
 
 %}
 
@@ -140,14 +141,13 @@ Statement	:	LC {startScope();} Statements {endScopeWrapper("Close");} RC {$$.typ
 PrefixIF 	: IF LP Exp RP { startScope();} M Statement {$$.type=$3.type; endScopeWrapper($7.type); 
 				genCodeIfStat(&$$,&$3,$6.nextAddress); $$.falseList=$7.falseList;} ;
 
-CasesList	:	CaseStat CasesList {$$.nextList=merge($1.nextList,$2.nextList);}
-			|	CaseStat {$$.nextList=$1.nextList;}
+CasesList	:	CaseStat CasesList {$$.nextList=merge($1.nextList,$2.nextList); printlist("in CasesStat",$1.nextList);}
+			|	CaseStat {$$.nextList=$1.nextList; printlist("in CasesStat line two",$1.nextList);}
 			;
 			
-CaseStat	:	CASE NUM CurrencyType COL {startScope(); $$.trueList = makelist(next()); emit("goto ");} 
-				M Statement {$$.nextList = merge($$.nextList,makelist(next())); emit("goto ");} M {endScopeWrapper($7.type); 
-				genCodeCaseStat($2,$3,$6.nextAddress);} 
-				BREAK SC {bp($$.trueList, $9.nextAddress);};
+CaseStat	:	CASE NUM CurrencyType COL N {startScope(); }
+				M Statement N {list<int>temp1=makelist($9.nextAddress); $$.nextList = merge($$.nextList, temp1); printlist("inCaseStat",$$.nextList);} M {endScopeWrapper($8.type);
+				genCodeCaseStat($2,$3,$7.nextAddress);} BREAK SC {list<int>vasya=makelist($5.nextAddress); bp(vasya, $11.nextAddress);};
 				
 CurrencyType	:	RUBLE {$$.type = "RUBLE";}
 				|	EURO {$$.type = "EURO";}
@@ -182,6 +182,13 @@ N	: {$$.nextAddress = next(); emit("goto ");} ;
 
 %%
 
+void SonyaWantsToSleep(YYSTYPE *res)
+{
+    res->trueList = makelist(next());
+    emit("goto "); 
+    printlist("in first scope", res->trueList);
+}
+
 void genCodeCaseStat(YYSTYPE num, YYSTYPE currencytype, int blockStartAddr){
 	
 	YYSTYPE exp = switchExpStack.top();
@@ -191,7 +198,7 @@ void genCodeCaseStat(YYSTYPE num, YYSTYPE currencytype, int blockStartAddr){
 	
 	ostringstream os;
 	os << blockStartAddr;
-	emit("if " + exp.var + "==" + var + "goto " + os.str());
+	emit("if " + exp.var + "==" + var + " goto " + os.str());
 }
 
 void genCodeBreak(YYSTYPE *res){

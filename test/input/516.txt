@@ -1,15 +1,15 @@
 // boolean assignment of relative operations precedence
 
-bool b= true and false or true;
-if(b) then print "logical operations test ok";
+
+if(true and false or true) print "logical operations test ok";
 else print "logical operator test fail";
 
-b=true or true and false;
-c=b;
-if(c) then print "logical operator precedence test 1 FAIL";
-else print "logical operator precedence test 1 OK"
 
-b=true or false and false;
-c=b;
-if(c) then print "logical operator precedence test 2 FAIL";
+if(true or true and false) print "logical operator precedence test 1 FAIL";
+else print "logical operator precedence test 1 OK";
+
+
+if(true or false and false) print "logical operator precedence test 2 FAIL";
 else print "logical operator precedence test 2 FAIL";
+
+//bool c=b;

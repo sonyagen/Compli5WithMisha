@@ -49,6 +49,6 @@ list<int> makelist(int litem);
 
 list<int> merge(list<int> l1,list<int> l2);
 
-void printlist(list<int> l);
+void printlist(string msg, list<int> l);
 #endif
 
