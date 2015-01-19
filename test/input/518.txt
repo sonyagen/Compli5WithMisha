@@ -1,0 +1,40 @@
+//switch case testing
+
+//simple
+switch(5D)
+{
+	case 3D: print "fail_1"; break;
+	case 5D : print "ok"; break;
+	case 9D : print "fail_2"; break;
+}
+
+//coercion
+switch(5D){
+	case 3D: print "fail_3"; break;
+	case 4E : print "ok"; break;
+	case 9D : print "fail_4"; break;
+}
+
+switch(4E){
+	case 3D: print "fail_5"; break;
+	case 300R : print "ok"; break;
+	case 9D : print "fail_6"; break;
+}
+
+
+//2 possible values
+switch(4E){
+	case 3D: print "fail_7"; break;
+	case 300R : print "ok"; break;
+	case 5D : print "fail_8"; break;
+}
+
+//no possible answer
+//2 possible values
+int x = 0;
+switch(1E){
+	case 3D: x = 1; break;
+	case 300R : x = 1; break;
+	case 5D : x = 1; break;
+}
+if (x==0) print "ok"; else print "fail_9";

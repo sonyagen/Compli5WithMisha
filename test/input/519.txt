@@ -1,0 +1,8 @@
+//test for variable and scopes
+
+int x = 0; 
+{
+	int x = 1; 
+	if(x==1) print "ok"; else print "fail";
+}
+if(x==0) print "ok"; else print "fail";

@@ -1,0 +1,48 @@
+//real prog
+
+int X = 3;
+int y = 0;
+while(true and 5D+4E+301R>900R and !X<0){
+	if(X>=2){
+		switch (300R*X){
+			case 900 R : {
+				if(X==3) y=3; else y=2;
+				switch (4E*y){
+					case 10E: y=1; break;
+					case 12E: y=10; break;
+					case 15E: y=1; break;
+				}}  break;
+			case 10D : { y=0; while(y!=X+5) y=y+1; }  break;
+				
+			case 4E : print "fail";  break;
+		}
+		if(X==3 and y==10) print "ok"; else print "fail_1";
+		if(X==2 and y==7) print "ok"; else print "fail_2";
+	}
+
+	else{ //X==1 or x==0 y==7
+		while(y>5){
+			if(X==1) break;
+			if(X==1) print "fail_3"; else print "ok";
+			
+			int c = 0;
+			int contrrol = 0;
+			while(true){
+				switch((300R+5D)*(8E/5D + c)){
+					case 15E: print "fail4"; break;
+					case 16E:  c = c+1; break;
+					case 24E:  {c = 100;contrrol=2;} break;
+				}
+				if(contrrol==0 and c==1) print "ok"; else print "fail";
+				if(contrrol==2 and c==100) print "ok"; else print "fail";
+				
+				contrrol = 3;
+				if(c==100) break;
+				contrrol = 4;
+			}
+			if(contrrol==3 ) print "ok"; else print "fail";
+			y=0;
+		}
+	}
+	X=X-1;
+}
