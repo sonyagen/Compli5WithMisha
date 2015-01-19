@@ -1,3 +1,33 @@
 // TODO break semantics in while
+int counter = 12;
+print "counting down from 12 to 5";
+while(counter>0)
+{
+    counter=counter-1;
+    print counter;
+    if(counter==5) break;
+    if(counter<5) print "FAIL";
+}
+if(counter==5) print "OK";
 
 // TODO while inside a while + break
+print "we will print out a trapeze on it's side";
+counter=10;
+int y;
+while(counter>0)
+{
+    y=counter
+    while(y>0) {
+	print "*";
+	y=y-1;
+	if(y==8) { 
+	 break;
+	if(y<8) print "FAIL";
+	y=16;
+	}
+	if(y==8) print "OK for iteration ";
+	if(y=16) print "FAIL";
+	print y;
+	print "\n";
+}
+

@@ -17,6 +17,6 @@ if(not(2<3 and (4<3 or 6!=7)))
 if (x==1) print "ok"; else print "fail if-else";
 
 x=10;
-
+print "5 while iterations";
 while(x!=0) { x=x-5; print "iteration"; print x;}
 print "exited while";

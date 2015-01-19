@@ -1,1 +1,10 @@
 // TODO bool variable + if for it
+BOOL vara = TRUE;
+BOOL varB = FALSE;
+BOOL varC = FALSE;
+if(vara) then print "BOOL test 1 passed";
+else print "BOOL test 1 failed";
+if(not varB) then print "BOOL test 2 passed";
+else print "BOOL test 2 failed";
+if(varC) then print "BOOL test 3 failed";
+else print "BOOL test 3 passed";
