@@ -1,6 +1,6 @@
 // TODO break semantics in while
 int counter = 12;
-print "counting down from 12 to 5";
+print "counting down from 11 to 5";
 while(counter>0)
 {
     counter=counter-1;
@@ -16,18 +16,18 @@ counter=10;
 int y;
 while(counter>0)
 {
-    y=counter
+    y=counter;
     while(y>0) {
 	print "*";
 	y=y-1;
-	if(y==8) { 
-	 break;
-	if(y<8) print "FAIL";
-	y=16;
+	if(y==8) {
+	    break;
+	    if(y<8) print "FAIL";
+	    y=16;
 	}
 	if(y==8) print "OK for iteration ";
-	if(y=16) print "FAIL";
+	if(y==16) print "FAIL";
 	print y;
-	print "\n";
+    }
 }
 

@@ -8,6 +8,8 @@ R r;
 D d;
 E e;
 
+print "enter four integer numbers separated by ENTER";
+
 input i;
 input r;
 input d;

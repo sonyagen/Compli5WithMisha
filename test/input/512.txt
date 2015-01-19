@@ -5,3 +5,6 @@ if (true or false) print "ok"; else print "fail";
 if (false or true) print "ok"; else print "fail";
 
 if (false or true) print "ok"; else print "fail";
+
+if (3<2) print "fail"; else print "ok";
+if (4>5) print "fail"; else print "ok";
