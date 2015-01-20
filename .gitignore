@@ -2,6 +2,8 @@
 src/hw5.tab.cpp
 src/hw5.tab.hpp
 src/lex.yy.c
-test/output/*
-test/errors/*
+tests/our/*.txt.our
+tests/our/*.txt.bvm_our
+tests/our/*.txt.err
+tests/our/*.txt.bvm_err
 backups/*
