@@ -1,0 +1,13 @@
+// case in case
+
+
+switch(4E){
+	case 3D: print "fail_1"; break;
+	case 300R : 
+				{ switch(8E){
+					case 3D: print "fail_2"; break;
+					case 600R : print "ok"; break;
+				} break;
+	case 9D : print "fail_3"; break;
+}
+print "ok";

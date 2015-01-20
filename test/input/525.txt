@@ -1,0 +1,25 @@
+//if inside while
+
+int x = 3;
+int ctrl = 0;
+while(x>0){
+
+	ctrl = ctrl + 1;
+	
+	if(x==20){
+		break;
+	}
+	if(x==16){
+		x=20;
+	}
+	
+	if(x==3){
+		x=16;
+	}
+	
+	if(ctrl==1 and x==16) print "ok"; else print "fail";
+	if(ctrl==2 and x==20) print "ok"; else print "fail";
+	if(ctrl==3 ) print "fail";
+}
+
+if(ctrl==3 ) print "ok"; else print "fail";
