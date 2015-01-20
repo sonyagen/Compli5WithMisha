@@ -28,7 +28,7 @@
 
 	stack<int> scopes;
 	map<int,var> var_map;
-	list<int> switchlist;
+	stack < list<int> > switchliststack;
 	stack<YYSTYPE> switchExpStack; 	//the value on the top of stack is the result of innermost switch expression evaluation
 									// on every nested switch level the new variable is pushed to it
 	int TempVarCounter = 0;
@@ -134,8 +134,8 @@ Statement	:	LC {startScope();} Statements {endScopeWrapper("Close");} RC {$$.typ
 				{ifNotBoolExit($4); endScopeWrapper($8.type); WhileLoopCount--; $$.type="FakeClose";
 				genCodeWhile(&$$,$3.nextAddress,&$4,$7.nextAddress); $$.nextList = merge($$.nextList,$8.falseList); bp($8.nextList,$3.nextAddress);}
 			|	BREAK SC {ifNotInWhileExit(); $$.type="FakeClose"; genCodeBreak(&$$);}
-			|	SWITCH LP Exp RP LC { startScope(); switchExpStack.push($3);} CasesList {} RC {ifNotCurrencyExit($3); 
-				endScopeWrapper("Close"); $$.type="FakeClose"; switchExpStack.pop(); $$.nextList = switchlist/*$7.nextList*/; switchlist.clear();}
+			|	SWITCH LP Exp RP LC { startScope(); switchExpStack.push($3); list<int> temp;switchliststack.push(temp);} CasesList {} RC {ifNotCurrencyExit($3); 
+				endScopeWrapper("Close"); $$.type="FakeClose"; switchExpStack.pop(); $$.nextList = switchliststack.top()/*$7.nextList*/; switchliststack.pop();}
 			;
 			
 PrefixIF 	: IF LP Exp RP { startScope();} M Statement {$$.type=$3.type; endScopeWrapper($7.type); 
@@ -146,7 +146,7 @@ CasesList	:	CaseStat CasesList {$$.nextList=merge($1.nextList,$2.nextList); /*pr
 			;
 			
 CaseStat	:	CASE NUM CurrencyType COL N {startScope(); }
-				M Statement N {list<int>temp1=makelist($9.nextAddress); $$.nextList = merge($$.nextList, temp1); switchlist=merge(switchlist,temp1); /*printlist("inCaseStat",$$.nextList);*/} M {endScopeWrapper($8.type);
+				M Statement N {list<int>temp1=makelist($9.nextAddress); $$.nextList = merge($$.nextList, temp1); list<int> templist=switchliststack.top(); switchliststack.pop(); templist=merge(templist,temp1); switchliststack.push(templist);/*printlist("inCaseStat",$$.nextList);*/} M {endScopeWrapper($8.type);
 				genCodeCaseStat($2,$3,$7.nextAddress);} BREAK SC {list<int>vasya=makelist($5.nextAddress); bp(vasya, $11.nextAddress);};
 				
 CurrencyType	:	RUBLE {$$.type = "RUBLE";}
