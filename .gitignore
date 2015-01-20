@@ -1,0 +1,7 @@
+*.exe
+src/hw5.tab.cpp
+src/hw5.tab.hpp
+src/lex.yy.c
+test/output/*
+test/errors/*
+backups/*
