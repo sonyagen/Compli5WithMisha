@@ -1,0 +1,14 @@
+//case inside while
+int c = 2;
+int control = 0;
+while(c>0){
+	if(control==0 and c==2) print "ok"; else print "faile_2";
+	switch(1E*c){
+		case 1E: print "fail_1"; break;
+		case 2E : c=3; break;
+		case 3E : c=-1; break;
+	}
+	control=control+1;
+	if(control==1 and c==3) print "ok"; else print "faile_4";
+	if(control==2 and c==-1) print "ok"; else print "faile_5";
+}

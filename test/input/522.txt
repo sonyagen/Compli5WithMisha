@@ -1,0 +1,16 @@
+//if in case
+switch(4E){
+	case 3D: print "fail_1"; break;
+	case 300R : 
+				{ if(5D<302R) { int x = 5;
+								int y = x+2;
+								print "ok";
+							  } else print "Fail";
+					print "ok";		  
+				} break;
+	case 9D : print "fail_3"; break;
+}
+print "ok";
+
+
+
