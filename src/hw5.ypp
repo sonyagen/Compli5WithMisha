@@ -249,8 +249,12 @@ void genCodeFalseExp(YYSTYPE* a){
 }
 
 void genCodeRelOpExp(YYSTYPE* a, string rel_op, YYSTYPE* b, YYSTYPE* res){
-	string var1=coerseType("RUBLE", a->type, a->var);
-	string var2=coerseType("RUBLE", b->type, b->var);
+	
+	string var1= a->var;
+	string var2= b->var;
+	
+	var2=coerseType(a->type, b->type, var2);
+	
 	list<int> alist;
 	if(rel_op=="<=" || rel_op==">="){
 		alist = makelist(next());
